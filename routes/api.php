@@ -16,10 +16,15 @@ use App\Http\Controllers\BookController;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//     return $request->user();
+// });
 
+
+// トップページ用のルート
+Route::get('/', function () {
+    return response()->json(['message' => 'ようこそ、APIトップページです']);
+});
 
 // 本の一覧取得（GET）
 Route::get('/books', [BookController::class, 'index']);
@@ -28,4 +33,5 @@ Route::get('/books', [BookController::class, 'index']);
 Route::post('/books', [BookController::class, 'store']);
 
 // 本の検索（GET）
-Route::get('/books', [BookController::class, 'search']);
+// 検索用のルートを /searchbooks に変更
+Route::get('/searchbooks', [BookController::class, 'search']);
