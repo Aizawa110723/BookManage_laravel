@@ -15,16 +15,19 @@ class BookSeeder extends Seeder
     {
         //書籍データ
         $books = [
-            ['title' => '私と小鳥と鈴と', 'author' => '金子みすゞ', 'publisher' => '金子出版', 'year' => 1923, 'genre' => '詩'],
-            ['title' => '坊っちゃん', 'author' => '夏目漱石', 'publisher' => '夏目出版', 'year' => 1906, 'genre' => '小説'],
-            ['title' => '草野心平詩集', 'author' => '草野心平', 'publisher' => '草野出版', 'year' => 1940, 'genre' => '詩'],
-            ['title' => '蜘蛛の糸', 'author' => '芥川龍之介', 'publisher' => '芥川出版', 'year' => 1918, 'genre' => '短編小説'],
-            ['title' => '人間失格', 'author' => '太宰治', 'publisher' => '太宰出版', 'year' => 1948, 'genre' => '小説'],
-            ['title' => 'ノルウェイの森', 'author' => '村上春樹', 'publisher' => '講談社', 'year' => 1987, 'genre' => '小説'],
-            ['title' => 'コンビニ人間', 'author' => '村田沙耶香', 'publisher' => '村田出版', 'year' => 2016, 'genre' => '小説'],
-            ['title' => '雪国', 'author' => '川端康成', 'publisher' => '川端出版', 'year' => 1956, 'genre' => '小説'],
-            ['title' => '1Q84', 'author' => '村上春樹', 'publisher' => '新潮社', 'year' => 2009, 'genre' => '小説'],
-            ['title' => '火花', 'author' => '又吉直樹', 'publisher' => '文藝春秋', 'year' => 2015, 'genre' => '小説'],
+            // 文学・評論
+            ['title' => 'わたしと小鳥とすずと', 'author' => '金子みすゞ', 'publisher' => '金子出版', 'year' => 1923, 'genre' => '文学・評論'],
+            ['title' => '坊っちゃん', 'author' => '夏目漱石', 'publisher' => '夏目出版', 'year' => 1906, 'genre' => '文学・評論'],
+            ['title' => '草野心平詩集', 'author' => '草野心平', 'publisher' => '草野出版', 'year' => 1940, 'genre' => '文学・評論'],
+            ['title' => '蜘蛛の糸', 'author' => '芥川龍之介', 'publisher' => '芥川出版', 'year' => 1918, 'genre' => '文学・評論'],
+            ['title' => '人間失格', 'author' => '太宰治', 'publisher' => '太宰出版', 'year' => 1948, 'genre' => '文学・評論'],
+            // ノンフィクション
+            ['title' => 'サピエンス全史', 'author' => 'ユヴァル・ノア・ハラリ', 'publisher' => '河出書房新社', 'year' => 2014, 'genre' => 'ノンフィクション'],
+            ['title' => '人類の未来', 'author' => 'スティーブン・ホーキング', 'publisher' => 'SBクリエイティブ', 'year' => 2018, 'genre' => 'ノンフィクション'],
+            // ビジネス・経済
+            ['title' => '金持ち父さん貧乏父さん', 'author' => 'ロバート・キヨサキ', 'publisher' => '筑摩書房', 'year' => 1997, 'genre' => 'ビジネス・経済'],
+            ['title' => '7つの習慣', 'author' => 'スティーブン・R・コヴィー', 'publisher' => 'キングベアー出版', 'year' => 1989, 'genre' => 'ビジネス・経済'],
+
         ];
 
 

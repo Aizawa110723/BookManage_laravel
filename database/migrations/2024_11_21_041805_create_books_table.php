@@ -15,9 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->string('author');
-            $table->string('publisher');
-            $table->integer('year');
-            $table->string('genre');
+            $table->string('publisher')->nullable();
+            $table->integer('year')->nullable();
+            $table->string('genre')->nullable();
+            $table->text('description')->nullable(); // 書籍の説明（オプション）
+            $table->date('published_date')->nullable();  // 出版日（オプション）
+            $table->string('google_books_url')->nullable(); // Google BooksのURL（オプション）
+            $table->string('image_path')->nullable();  // 画像のパス（オプション）
             $table->timestamps();
         });
     }
