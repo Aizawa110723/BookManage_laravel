@@ -4,6 +4,7 @@ use App\Models\Book;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookController;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,6 +21,24 @@ use App\Http\Controllers\BookController;
 //     return $request->user();
 // });
 
+Route::post('/upload', function (Request $request) {
+    // バリデーション（画像ファイルかどうか確認）
+    $request->validate([
+        'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ]);
+
+    // 画像ファイルを取得
+    $image = $request->file('image');
+
+    // 画像を 'public/images' に保存
+    $imagePath = $image->store('public/images');
+
+    // 保存した画像のパスを返す
+    return response()->json([
+        'message' => '画像が正常にアップロードされました。',
+        'image_path' => Storage::url($imagePath) // 画像のURLを返す
+    ]);
+});
 
 // トップページ用のルート
 Route::get('/', function () {

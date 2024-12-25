@@ -5,6 +5,11 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Book;
+use Illuminate\Support\Facades\Http; // Httpクラスのインポート
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;  // ログを使ってデバッグ
+
 
 class BookSeeder extends Seeder
 {
@@ -31,9 +36,76 @@ class BookSeeder extends Seeder
         ];
 
 
-        // Bookモデルを使ってデータベースに挿入
         foreach ($books as $book) {
-            Book::create($book);
+            $response = Http::get(
+                "https://www.googleapis.com/books/v1/volumes",
+                ['q' => 'intitle:' . urlencode($book['title']) . '+inauthor:' . urlencode($book['author'])]
+            );
+
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                // itemsが存在しているか確認
+                if (isset($data['items']) && count($data['items']) > 0) {
+                    $bookData = $data['items'][0]['volumeInfo'];
+
+                    // 書籍情報を保存
+                    $bookRecord = Book::create([
+                        'title' => $bookData['title'],
+                        'author' => implode(', ', $bookData['authors']),
+                        'description' => $bookData['description'] ?? 'No description available',
+                        'published_date' => $bookData['publishedDate'],
+                        'google_books_url' => $bookData['infoLink'],
+                    ]);
+
+                    // 年 (year) を保存
+                    if (isset($bookData['publishedDate'])) {
+                        $bookRecord->year = substr($bookData['publishedDate'], 0, 4); // 年を取り出して保存
+                    }
+
+                    // ジャンル (genre) を保存
+                    if (isset($bookData['categories'])) {
+                        $bookRecord->genre = implode(', ', $bookData['categories']); // ジャンルを保存
+                    }
+
+                    // 画像の保存処理
+                    if (isset($bookData['imageLinks']['thumbnail'])) {
+                        $imageUrl = $bookData['imageLinks']['thumbnail'];
+
+                        try {
+                            // HTTPリクエストを使って画像を取得
+                            $imageContents = Http::get($imageUrl)->body();
+
+                            if ($imageContents) {
+                                // ランダムな名前をつけて保存
+                                $imageName = Str::random(10) . basename($imageUrl);
+                                $path = 'books/images/' . $imageName;
+
+                                // ストレージに保存
+                                Storage::disk('public')->put($path, $imageContents);
+
+                                // 画像パスをデータベースに保存
+                                $book->image_path = $path;
+                                $book->save();
+
+                                // 完全なURLを追加
+                                $book->image_url = url("storage/{$book->image_path}");
+                                $book->save();
+                            }
+                        } catch (\Exception $e) {
+                            Log::error("Error downloading image for book: {$book['title']} by {$book['author']}", [
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+                }
+            } else {
+                Log::error("Failed to fetch book from API: {$book['title']} by {$book['author']}", [
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+            }
         }
     }
 }
