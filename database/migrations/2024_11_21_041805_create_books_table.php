@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('books', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->string('author');
+            $table->string('title'); // 空不可
+            $table->string('author'); // 空不可
             $table->string('publisher')->nullable();
             $table->integer('year')->nullable();
             $table->string('genre')->nullable();
@@ -22,6 +22,7 @@ return new class extends Migration
             $table->date('published_date')->nullable();  // 出版日（オプション）
             $table->string('google_books_url')->nullable(); // Google BooksのURL（オプション）
             $table->string('image_path')->nullable();  // 画像のパス（オプション）
+            $table->string('image_url')->nullable();   // 画像のURL
             $table->timestamps();
         });
     }

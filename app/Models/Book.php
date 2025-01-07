@@ -11,5 +11,15 @@ class Book extends Model
     protected $table = 'books';
 
     // 複数代入可能な属性
-    protected $fillable = ['title', 'author', 'publisher', 'year', 'genre'];
+    protected $fillable = [
+        'title',
+        'author',
+        'description',
+        'published_date',
+        'google_books_url',
+        'year',
+        'genre',
+        'image_path',
+        'image_url',
+    ];
 }
