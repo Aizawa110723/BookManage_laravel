@@ -2,92 +2,103 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Http\Request;
-use App\Models\Book;
 use Illuminate\Database\Seeder;
+use App\Models\Book;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;  // ログを使うために追加
 
 class BookSeeder extends Seeder
 {
-    // 本の登録
     public function run()
     {
+        // 初期データ
         $books = [
             [
                 'title' => '電気羊はアンドロイドの夢を見るか？',
                 'author' => 'フィリップ・K・ディック',
-                'publisher' => '早川書房',
-                'year' => 1968,
-                'genre' => 'サイエンスフィクション',
-                'description' => '未来社会におけるアンドロイドと人間の境界を描いたディストピア小説。',
-                'published_date' => '1968-03-01',
-                'google_books_url' => 'https://books.google.com/books?id=1VjSAAAAMAAJ',
-                'image_path' => 'books/images/sample1.jpg',
-                'image_url' => 'http://localhost:8000/storage/books/images/sample1.jpg',
             ],
             [
-                'title' => 'コンビニ人間',
-                'author' => '村田沙耶香',
-                'publisher' => '文藝春秋',
-                'year' => 2016,
-                'genre' => '文学',
-                'description' => '日本社会における異端者として生きるヒロインの心情を描く。',
-                'published_date' => '2016-06-15',
-                'google_books_url' => 'https://books.google.com/books?id=Zfz2jwEACAAJ',
-                'image_path' => 'books/images/sample2.jpg',
-                'image_url' => 'http://localhost:8000/storage/books/images/sample2.jpg',
+                'title' => 'わたしと小鳥とすずと',
+                'author' => '金子みすゞ',
             ],
             [
                 'title' => '三毛猫ホームズの推理',
-                'author' => '赤川 次郎',
-                'publisher' => '双葉社',
-                'year' => 1992,
-                'genre' => 'ミステリー',
-                'description' => '三毛猫ホームズは、名探偵として活躍する猫の姿を描いた物語。人間と猫が協力して事件を解決する。',
-                'published_date' => '1992-06-10',
-                'google_books_url' => 'https://books.google.com/books?id=xxxxx',
-                'image_path' => 'books/images/mikeneko_home.jpg',
-                'image_url' => 'http://localhost:8000/storage/books/images/mikeneko_home.jpg',
+                'author' => '赤川次郎',
             ],
             [
-                'title' => 'わたしと小鳥と鈴と',
-                'author' => '村山 由佳',
-                'publisher' => '講談社',
-                'year' => 2000,
-                'genre' => '恋愛小説',
-                'description' => '人と人との関係における心の葛藤と愛を描いた、感動的な恋愛小説。',
-                'published_date' => '2000-07-12',
-                'google_books_url' => 'https://books.google.com/books?id=yyyyy',
-                'image_path' => 'books/images/watashi_to_kotori.jpg',
-                'image_url' => 'http://localhost:8000/storage/books/images/watashi_to_kotori.jpg',
+                'title' => '蜘蛛の糸',
+                'author' => '芥川龍之介',
             ],
             [
-                'title' => '1984年',
-                'author' => 'ジョージ・オーウェル',
-                'publisher' => 'ハヤカワ文庫',
-                'year' => 1950,
-                'genre' => 'ディストピア',
-                'description' => '未来社会における全体主義体制を描いた名作。',
-                'published_date' => '1950-01-01',
-                'google_books_url' => 'https://books.google.com/books?id=9XtPAAAAYAAJ',
-                'image_path' => 'books/images/sample4.jpg',
-                'image_url' => 'http://localhost:8000/storage/books/images/sample4.jpg',
+                'title' => '竜馬がゆく',
+                'author' => '司馬遼太郎',
             ],
-            [
-                'title' => 'ワイルド・スワンズ',
-                'author' => 'ユン・チアン',
-                'publisher' => '講談社',
-                'year' => 1991,
-                'genre' => '歴史',
-                'description' => '中国近現代の歴史を描いた回顧録。',
-                'published_date' => '1991-02-25',
-                'google_books_url' => 'https://books.google.com/books?id=vI8FB9I18UwC',
-                'image_path' => 'books/images/sample5.jpg',
-                'image_url' => 'http://localhost:8000/storage/books/images/sample5.jpg',
-            ]
         ];
 
         foreach ($books as $book) {
-            Book::create($book);
+            Log::info('Processing book: ' . $book['title']); // 処理中の書籍情報をログに出力
+
+            // Google Books APIにリクエストを送る
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . config('services.google_books.api_key'), // APIキーを取得
+            ])->get('https://www.googleapis.com/books/v1/volumes', [
+                'q' => 'intitle:' . urlencode($book['title']) . '+inauthor:' . urlencode($book['author']),
+            ]);
+
+            // レスポンスのチェック
+            if ($response->successful()) {
+                // APIが成功した場合
+                $responseData = $response->json();
+                // データ処理
+
+                // items 配列が存在し、書籍が1冊以上ある場合
+                if (isset($responseData['items'][0])) {
+                    $bookData = $responseData['items'][0];
+
+                    // Bookインスタンスを新規作成
+                    $bookInstance = new Book();
+                    $bookInstance->title = $bookData['volumeInfo']['title'];
+                    $bookInstance->author = implode(', ', $bookData['volumeInfo']['authors']);
+                    $bookInstance->description = $bookData['volumeInfo']['description'] ?? 'No description available';
+                    $bookInstance->published_date = $bookData['volumeInfo']['publishedDate'];
+                    $bookInstance->google_books_url = $bookData['volumeInfo']['infoLink'] ?? null;
+
+                    // 画像の保存
+                    if (isset($bookData['volumeInfo']['imageLinks']['thumbnail'])) {
+                        $imageUrl = $bookData['volumeInfo']['imageLinks']['thumbnail'];
+                        try {
+
+                            // 画像URLを使って画像データを取得
+                            $imageContents = Http::get($imageUrl)->body();
+                            $imageName = Str::random(10) . basename($imageUrl);
+                            $path = 'books/images/' . $imageName;
+                            Storage::disk('public')->put($path, $imageContents);
+                            $bookInstance->image_path = $path;
+                            $bookInstance->image_url = url('storage/' . $path);
+                            Log::info('Image saved successfully for book: ' . $bookInstance->title);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to save image for book: ' . $bookInstance->title . '. Error: ' . $e->getMessage());
+                        }
+                    } else {
+                        Log::warning('No image found for book: ' . $bookInstance->title);
+                    }
+
+                    // データベースに書籍情報を保存
+                    try {
+                        $bookInstance->save();
+                        Log::info('Book added successfully: ' . $bookInstance->title);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to save book: ' . $bookInstance->title . '. Error: ' . $e->getMessage());
+                    }
+                } else {
+                    Log::warning('No books found for search query: ' . $book['title']);
+                }
+            } else {
+                Log::error('Failed to fetch book data for: ' . $book['title']);
+            }
         }
     }
 }
+

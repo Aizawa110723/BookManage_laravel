@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Book extends Model
 {
+    use HasFactory;
+    
     // このモデルで使うテーブル
     protected $table = 'books';
 

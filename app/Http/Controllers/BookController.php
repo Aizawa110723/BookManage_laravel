@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Book;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http; // HTTPリクエストを送る
 use Illuminate\Support\Facades\Storage;  // ローカルストレージに保存するためのファサード
 use Illuminate\Support\Str; // ユニークな文字列を生成する(ファイル名の重複を避ける)
@@ -46,14 +46,14 @@ class BookController extends Controller
         $book->published_date = $bookData['volumeInfo']['publishedDate'];
         $book->google_books_url = $bookData['volumeInfo']['infoLink'];
 
-        // year と genre を保存するための処理を追加
-        if (isset($bookData['volumeInfo']['publishedDate'])) {
-            $book->year = substr($bookData['volumeInfo']['publishedDate'], 0, 4); // 年を取り出して保存
-        }
+        // // year と genre を保存するための処理を追加
+        // if (isset($bookData['volumeInfo']['publishedDate'])) {
+        //     $book->year = substr($bookData['volumeInfo']['publishedDate'], 0, 4); // 年を取り出して保存
+        // }
 
-        if (isset($bookData['volumeInfo']['categories'])) {
-            $book->genre = implode(', ', $bookData['volumeInfo']['categories']); // ジャンルを保存
-        }
+        // if (isset($bookData['volumeInfo']['categories'])) {
+        //     $book->genre = implode(', ', $bookData['volumeInfo']['categories']); // ジャンルを保存
+        // }
 
         // 画像のURLを取得してローカルストレージに保存
         if (isset($bookData['volumeInfo']['imageLinks']['thumbnail'])) {
@@ -63,10 +63,11 @@ class BookController extends Controller
                 // HTTPクライアントを使って画像を取得
                 $imageContents = Http::get($imageUrl)->body();
 
+                // レスポンスが成功か確認
                 if (!$imageContents) {
                     return response()->json(['error' => 'Failed to download image: Image URL is invalid'], 500);
                 }
-
+                
                 // ファイル名をユニークにするため、ランダムな文字列を付与
                 $imageName = Str::random(10) . basename($imageUrl);
                 $path = 'books/images/' . $imageName;
