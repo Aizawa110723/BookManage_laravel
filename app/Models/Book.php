@@ -16,11 +16,12 @@ class Book extends Model
     protected $fillable = [
         'title',
         'author',
+        'publisher',
+        'year',
+        'genre',
         'description',
         'published_date',
         'google_books_url',
-        'year',
-        'genre',
         'image_path',
         'image_url',
     ];
