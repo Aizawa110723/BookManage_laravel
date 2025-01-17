@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Services\GoogleBooksService;
 use Illuminate\Database\Seeder;
 use App\Models\Book;
+use App\Services\GoogleBooksService;
+
 
 class BookSeeder extends Seeder
 {
@@ -24,6 +25,7 @@ class BookSeeder extends Seeder
         if ($booksData) {
             // 取得した書籍情報をデータベースに保存
             foreach ($booksData['items'] as $item) {
+
                 // 必要な情報を取り出してBookモデルに保存
                 Book::create([
                     'title' => $item['volumeInfo']['title'] ?? 'No Title',

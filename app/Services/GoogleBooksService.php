@@ -4,15 +4,16 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use App\Models\Book;
 
 class GoogleBooksService
+
 {
     /**
      * Google Books APIから書籍情報を取得
-     * 
+     *
      * @param string $title 書籍のタイトル
      * @param string $author 書籍の著者
      * @return array|null APIから取得した書籍情報
@@ -40,7 +41,7 @@ class GoogleBooksService
 
     /**
      * 書籍画像をダウンロードしてストレージに保存
-     * 
+     *
      * @param string $imageUrl 画像のURL
      * @return string|null ストレージに保存された画像のURL
      */
@@ -55,8 +56,8 @@ class GoogleBooksService
             }
 
             // ランダムなファイル名を生成
-            $imageName = Str::random(10) . basename($imageUrl);
-            $path = 'books/images/' . $imageName;
+            $imageName = Str::random(10) . '.jpg'; // 画像ファイル名（ランダム）
+            $path = 'books/images/' . $imageName; // 保存先パス
 
             // 画像をストレージに保存
             Storage::disk('public')->put($path, $imageContents);
@@ -64,15 +65,16 @@ class GoogleBooksService
             // 保存した画像のURLを返す
             return url("storage/{$path}");
         } catch (\Exception $e) {
+            Log::error('Failed to download image', ['error' => $e->getMessage()]);
             return null;
         }
     }
 
     /**
      * 書籍情報をデータベースに保存
-     * 
+     *
      * @param array $bookData 書籍情報
-     * @param string $imageUrl 画像URL
+     * @param string|null $imageUrl 画像URL（オプション）
      * @return Book 保存されたBookインスタンス
      */
     public function saveBook(array $bookData, string $imageUrl = null)
@@ -84,9 +86,9 @@ class GoogleBooksService
         $book->author = implode(', ', $bookData['volumeInfo']['authors'] ?? []);
 
         // オプション項目（存在しない場合はnull）
-        $book->publisher = $bookData['volumeInfo']['publisher'] ?? null;  // 出版者
-        $book->year = $bookData['volumeInfo']['publishedDate'] ? substr($bookData['volumeInfo']['publishedDate'], 0, 4) : null; // 出版年（年だけを抽出）
-        $book->genre = $bookData['volumeInfo']['categories'][0] ?? null;  // ジャンル（カテゴリーの1番目）
+        $book->publisher = $bookData['volumeInfo']['publisher'] ?? null;
+        $book->year = $bookData['volumeInfo']['publishedDate'] ? substr($bookData['volumeInfo']['publishedDate'], 0, 4) : null;
+        $book->genre = $bookData['volumeInfo']['categories'][0] ?? null;
         $book->description = $bookData['volumeInfo']['description'] ?? null;
         $book->published_date = $bookData['volumeInfo']['publishedDate'] ?? null;
         $book->google_books_url = $bookData['volumeInfo']['infoLink'] ?? null;
