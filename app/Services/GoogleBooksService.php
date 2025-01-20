@@ -6,11 +6,14 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;  // キャッシュを使用するために追加
 use App\Models\Book;
 
 class GoogleBooksService
 
 {
+    const API_REQUEST_LIMIT = 80;  // 警告を出すリクエスト回数
+
     /**
      * Google Books APIから書籍情報を取得
      *
@@ -20,15 +23,36 @@ class GoogleBooksService
      */
     public function fetchBooks(string $title, string $author)
     {
-        $response = Http::get('https://www.googleapis.com/books/v1/volumes', [
-            'q' => 'intitle:' . urlencode($title) . '+inauthor:' . urlencode($author),
-        ]);
+        // APIリクエストカウントをキャッシュで追跡
+        $requestCount = Cache::get('api_request_count', 0);
 
-        if ($response->successful()) {
-            return $response->json()['items'][0] ?? null; // 最初の書籍情報を返す
+        // 80回リクエストが行われたら警告を出す
+        if ($requestCount >= self::API_REQUEST_LIMIT) {
+            Log::warning('API request limit reached: 80 requests made');
         }
 
-        // エラーログを出力
+        // リクエストカウントをインクリメントし、キャッシュに保存
+        Cache::put('api_request_count', $requestCount + 1, now()->addMinutes(10));  // 10分後にリセット
+
+        // Google Books API にリクエストを送信
+        $response = Http::get('https://www.googleapis.com/books/v1/volumes', [
+            'q' => 'intitle:' . $title . '+inauthor:' . $author,
+        ]);
+
+        // リクエストが成功した場合
+        if ($response->successful()) {
+            $items = $response->json()['items'] ?? [];
+
+            // アイテムが存在すれば最初の書籍情報を返す
+            if (!empty($items)) {
+                return $items[0];
+            }
+
+            // アイテムが空の場合はnullを返す
+            return null; // '該当なし'ではなくnullを返すことで、より適切に処理できる
+        }
+
+        // APIリクエストが失敗した場合、エラーログを出力
         Log::error('Failed to fetch books from Google API', [
             'title' => $title,
             'author' => $author,
@@ -36,14 +60,16 @@ class GoogleBooksService
             'response' => $response->body(),
         ]);
 
-        return null;
+        // APIリクエスト失敗時には適切なエラーメッセージを返す
+        return 'APIリクエストが失敗しました'; // エラー発生時のメッセージ
     }
+
 
     /**
      * 書籍画像をダウンロードしてストレージに保存
      *
      * @param string $imageUrl 画像のURL
-     * @return string|null ストレージに保存された画像のURL
+     * @return string|string[] エラーがあった場合はエラーメッセージ、成功時は画像URL
      */
     public function downloadAndStoreImage(string $imageUrl)
     {
@@ -52,7 +78,7 @@ class GoogleBooksService
             $imageContents = Http::get($imageUrl)->body();
 
             if (!$imageContents) {
-                return null; // 画像が取得できなかった場合
+                return '画像が取得できませんでした'; // 画像が取得できなかった場合
             }
 
             // ランダムなファイル名を生成
@@ -66,7 +92,7 @@ class GoogleBooksService
             return url("storage/{$path}");
         } catch (\Exception $e) {
             Log::error('Failed to download image', ['error' => $e->getMessage()]);
-            return null;
+            return '画像のダウンロードに失敗しました';
         }
     }
 
@@ -77,7 +103,7 @@ class GoogleBooksService
      * @param string|null $imageUrl 画像URL（オプション）
      * @return Book 保存されたBookインスタンス
      */
-    public function saveBook(array $bookData, string $imageUrl = null)
+    public function saveBook(array $bookData, string $imageUrl = "")
     {
         $book = new Book();
 
@@ -86,28 +112,29 @@ class GoogleBooksService
         $book->author = implode(', ', $bookData['volumeInfo']['authors'] ?? []);
 
         // オプション項目（存在しない場合はnull）
-        $book->publisher = $bookData['volumeInfo']['publisher'] ?? null;
+        $book->publisher = $bookData['volumeInfo']['publisher'] ?? 'No Publisher';
         $book->year = $bookData['volumeInfo']['publishedDate'] ? substr($bookData['volumeInfo']['publishedDate'], 0, 4) : null;
-        $book->genre = $bookData['volumeInfo']['categories'][0] ?? null;
-        $book->description = $bookData['volumeInfo']['description'] ?? null;
-        $book->published_date = $bookData['volumeInfo']['publishedDate'] ?? null;
-        $book->google_books_url = $bookData['volumeInfo']['infoLink'] ?? null;
+        $book->genre = $bookData['volumeInfo']['categories'][0] ?? 'No Genre';
+        $book->description = $bookData['volumeInfo']['description'] ?? 'No Description';
+        $book->published_date = $bookData['volumeInfo']['publishedDate'] ?? 'No PublishedDate';
+        $book->google_books_url = $bookData['volumeInfo']['infoLink'] ?? 'No GoogleBooks URL';
 
-        // 画像URLが提供されていれば保存、なければnull
-        if ($imageUrl) {
-            $book->image_url = $imageUrl;
-        }
+        // 画像URLが提供されていればそのURLを、なければ'画像なし'を保存
+        $book->image_url = $imageUrl ? $imageUrl : '画像なし';
 
-        // DBに保存
+
+        // 画像URLをDBに保存
         try {
             $book->save();
+            return $book;
         } catch (\Exception $e) {
             Log::error('Failed to save book to database', [
                 'title' => $book->title,
                 'author' => $book->author,
                 'error' => $e->getMessage(),
+                'bookData' => $bookData,
             ]);
-            return null;
+            return '保存に失敗しました'; // 保存失敗時にエラーメッセージを返す
         }
 
         return $book;

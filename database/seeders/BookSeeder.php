@@ -20,7 +20,17 @@ class BookSeeder extends Seeder
     public function run()
     {
         // Google Books API から書籍情報を取得
-        $booksData = $this->googleBooksService->fetchBooks('laravel', '');  // 例えば「laravel」を検索
+        $booksData = $this->googleBooksService->fetchBooks('わたしと小鳥とすずと', '金子みすゞ');  // 例えば検索
+
+        // dd($booksData);
+
+        // '該当なし' の場合は処理を停止
+        if (
+            $booksData === '該当なし'
+        ) {
+            echo "書籍情報が見つかりませんでした";
+            return;
+        }
 
         if ($booksData) {
             // 取得した書籍情報をデータベースに保存
@@ -30,14 +40,14 @@ class BookSeeder extends Seeder
                 Book::create([
                     'title' => $item['volumeInfo']['title'] ?? 'No Title',
                     'author' => implode(', ', $item['volumeInfo']['authors'] ?? []),
-                    'publisher' => $item['volumeInfo']['publisher'] ?? null,  // 出版社
+                    'publisher' => $item['volumeInfo']['publisher'] ?? 'No Publisher',  // 出版社
                     'year' => isset($item['volumeInfo']['publishedDate']) ? substr($item['volumeInfo']['publishedDate'], 0, 4) : null,  // 出版年（yyyy）
-                    'genre' => isset($item['volumeInfo']['categories']) ? implode(', ', $item['volumeInfo']['categories']) : null, // ジャンル
-                    'description' => $item['volumeInfo']['description'] ?? null,  // 説明
-                    'published_date' => $item['volumeInfo']['publishedDate'] ?? null,  // 出版日
-                    'google_books_url' => $item['volumeInfo']['infoLink'] ?? null,  // Google Books のリンク
-                    'image_path' => $item['volumeInfo']['imageLinks']['thumbnail'] ?? null,  // 画像のURL
-                    'image_url' => $item['volumeInfo']['imageLinks']['thumbnail'] ?? null,  // 保存する画像のURL
+                    'genre' => isset($item['volumeInfo']['categories']) ? implode(', ', $item['volumeInfo']['categories']) : 'No Genre', // ジャンル
+                    'description' => $item['volumeInfo']['description'] ?? 'No Description',  // 説明
+                    'published_date' => $item['volumeInfo']['publishedDate'] ?? 'No Published Date',  // 出版日
+                    'google_books_url' => $item['volumeInfo']['infoLink'] ?? 'No GoogleBooks URL',  // Google Books のリンク
+                    'image_path' => $item['volumeInfo']['imageLinks']['thumbnail'] ?? 'No Image',  // 画像のURL
+                    'image_url' => $item['volumeInfo']['imageLinks']['thumbnail'] ?? 'No Image URL',  // 保存する画像のURL
                 ]);
             }
         }
