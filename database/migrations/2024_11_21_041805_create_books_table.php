@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('books', function (Blueprint $table) {
             $table->id();
             $table->string('title'); // 空不可
-            $table->string('author'); // 空不可
+            $table->string('authors'); // 空不可
             $table->string('publisher')->nullable();
             $table->integer('year')->nullable();
             $table->string('genre')->nullable();

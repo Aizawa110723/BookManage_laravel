@@ -6,64 +6,81 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;  // キャッシュを使用するために追加
+use Illuminate\Support\Facades\Cache;
 use App\Models\Book;
 
 class GoogleBooksService
-
 {
-    const API_REQUEST_LIMIT = 80;  // 警告を出すリクエスト回数
+    const API_REQUEST_LIMIT = 80; // 警告を出すリクエスト回数
 
     /**
      * Google Books APIから書籍情報を取得
      *
      * @param string $title 書籍のタイトル
-     * @param string $author 書籍の著者
+     * @param string $authors 書籍の著者
      * @return array|null APIから取得した書籍情報
      */
-    public function fetchBooks(string $title, string $author)
+    public function fetchBooks(string $title, string $authors)
     {
-        // APIリクエストカウントをキャッシュで追跡
-        $requestCount = Cache::get('api_request_count', 0);
+        // 初回実行フラグをキャッシュで取得
+        $firstRun = Cache::get('first_run', true);
 
-        // 80回リクエストが行われたら警告を出す
-        if ($requestCount >= self::API_REQUEST_LIMIT) {
-            Log::warning('API request limit reached: 80 requests made');
-        }
+        // 初回実行時にのみAPIリクエストを送信
+        if ($firstRun) {
+            // APIリクエストカウントをキャッシュで追跡
+            $requestCount = Cache::get('api_request_count', 0);
 
-        // リクエストカウントをインクリメントし、キャッシュに保存
-        Cache::put('api_request_count', $requestCount + 1, now()->addMinutes(10));  // 10分後にリセット
-
-        // Google Books API にリクエストを送信
-        $response = Http::get('https://www.googleapis.com/books/v1/volumes', [
-            'q' => 'intitle:' . $title . '+inauthor:' . $author,
-        ]);
-
-        // リクエストが成功した場合
-        if ($response->successful()) {
-            $items = $response->json()['items'] ?? [];
-
-            // アイテムが存在すれば最初の書籍情報を返す
-            if (!empty($items)) {
-                return $items[0];
+            // 80回リクエストが行われたら警告を出す
+            if ($requestCount >= self::API_REQUEST_LIMIT) {
+                Log::warning('API request limit reached: 80 requests made');
             }
 
-            // アイテムが空の場合はnullを返す
-            return null; // '該当なし'ではなくnullを返すことで、より適切に処理できる
+            // リクエストカウントをインクリメントし、キャッシュに保存
+            Cache::put('api_request_count', $requestCount + 1, now()->addDay()); // 24時間後にリセット
+
+            // Google Books API にリクエストを送信
+            $response = Http::get('https://www.googleapis.com/books/v1/volumes', [
+                'q' => 'intitle:' . $title . '+inauthor:' . $authors,
+            ]);
+
+            // レスポンスの内容をログに出力
+            Log::info('Google Books API response:', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'json' => $response->json(), // JSONデータもログに出力
+            ]);
+
+            // リクエストが成功した場合
+            if ($response->successful()) {
+                $items = $response->json()['items'] ?? [];
+
+                // アイテムが存在すれば最初の書籍情報を返す
+                if (!empty($items)) {
+                    // 初回実行フラグをfalseに更新
+                    Cache::put('first_run', false);
+
+                    return $items[0]; // 最初の書籍情報を返す
+                }
+
+                // アイテムが空の場合はnullを返す
+                return null; // '該当なし'ではなくnullを返すことで、より適切に処理できる
+            }
+
+            // APIリクエストが失敗した場合、エラーログを出力
+            Log::error('Failed to fetch books from Google API', [
+                'title' => $title,
+                'authors' => $authors,
+                'status' => $response->status(),
+                'response' => $response->body(),
+            ]);
+
+            // APIリクエスト失敗時には適切なエラーメッセージを返す
+            return 'APIリクエストが失敗しました'; // エラー発生時のメッセージ
         }
 
-        // APIリクエストが失敗した場合、エラーログを出力
-        Log::error('Failed to fetch books from Google API', [
-            'title' => $title,
-            'author' => $author,
-            'status' => $response->status(),
-            'response' => $response->body(),
-        ]);
-
-        // APIリクエスト失敗時には適切なエラーメッセージを返す
-        return 'APIリクエストが失敗しました'; // エラー発生時のメッセージ
+        // 初回以降の処理（Google APIからのデータ取得は不要）
+        return null; // Google APIからのデータは必要ない
     }
-
 
     /**
      * 書籍画像をダウンロードしてストレージに保存
@@ -109,9 +126,9 @@ class GoogleBooksService
 
         // 必須項目を設定
         $book->title = $bookData['volumeInfo']['title'] ?? 'No Title';
-        $book->author = implode(', ', $bookData['volumeInfo']['authors'] ?? []);
+        $book->authors = implode(', ', $bookData['volumeInfo']['authors'] ?? []);
 
-        // オプション項目（存在しない場合はnull）
+        // オプション項目（存在しない場合はnullかメッセージ）
         $book->publisher = $bookData['volumeInfo']['publisher'] ?? 'No Publisher';
         $book->year = $bookData['volumeInfo']['publishedDate'] ? substr($bookData['volumeInfo']['publishedDate'], 0, 4) : null;
         $book->genre = $bookData['volumeInfo']['categories'][0] ?? 'No Genre';
@@ -119,24 +136,22 @@ class GoogleBooksService
         $book->published_date = $bookData['volumeInfo']['publishedDate'] ?? 'No PublishedDate';
         $book->google_books_url = $bookData['volumeInfo']['infoLink'] ?? 'No GoogleBooks URL';
 
-        // 画像URLが提供されていればそのURLを、なければ'画像なし'を保存
-        $book->image_url = $imageUrl ? $imageUrl : '画像なし';
-
+        // 画像URLが提供されていればそのURLを、なければ'画像なし'とする
+        $book->image_url = $imageUrl ?: '画像なし';  // 画像がない場合に'画像なし'とする
 
         // 画像URLをDBに保存
         try {
             $book->save();
+
             return $book;
         } catch (\Exception $e) {
             Log::error('Failed to save book to database', [
                 'title' => $book->title,
-                'author' => $book->author,
+                'authors' => $book->authors,
                 'error' => $e->getMessage(),
                 'bookData' => $bookData,
             ]);
             return '保存に失敗しました'; // 保存失敗時にエラーメッセージを返す
         }
-
-        return $book;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Book;
 use App\Services\GoogleBooksService;
+use Illuminate\Support\Facades\Cache;
 
 class BookController extends Controller
 {
@@ -16,25 +17,42 @@ class BookController extends Controller
         $this->googleBooksService = $googleBooksService;
     }
 
-    // 本の登録
+    // 書籍登録
     public function store(Request $request)
     {
-        // バリデーション（ユーザーから送信されたデータの確認）
+        // バリデーション（ユーザーReactから送信されたデータの確認）
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'author' => 'required|string|max:255',
+            'authors' => 'required|string|max:255',
+            'publisher' => 'nullable|string|max:255',
+            'year' => 'nullable|string|max:4',
+            'genre' => 'nullable|string|max:255',
         ]);
 
-        // リクエストからタイトルと著者を取得
+        // リクエストからAPIでタイトルと著者を取得
         $title = $request->input('title');
-        $author = $request->input('author');
+        $authors = $request->input('authors');
+        $publisher = $validated['publisher'] ?? 'No Publisher';
+        $year = $validated['year'] ?? null;
+        $genre = $validated['genre'] ?? 'No Genre';
 
-        // Google Books APIから書籍情報を取得
-        $bookData = $this->googleBooksService->fetchBooks($title, $author);
 
-        // 書籍データが取得できなかった場合
+        // *-----------------------
+        // 初回のみAPIから書籍情報を取得し(seeder)、キャッシュされている場合はそのデータを使用
+        $cacheKey = 'book_data_' . md5($title . $authors);
+        $bookData = Cache::get($cacheKey);
+
         if (!$bookData) {
-            return response()->json(['error' => 'No book found'], 404);
+            // Google Books APIから書籍情報を取得
+            $bookData = $this->googleBooksService->fetchBooks($title, $authors);
+
+            // 書籍データが取得できなかった場合
+            if (!$bookData) {
+                return response()->json(['error' => 'No book found'], 404);
+            }
+
+            // APIから取得したデータをキャッシュに保存
+            Cache::put($cacheKey, $bookData, now()->addDay()); // 1日間キャッシュ
         }
 
         // 画像のURLを取得して保存
@@ -58,12 +76,11 @@ class BookController extends Controller
         return response()->json($books);
     }
 
-
     // 書籍の検索（タイトル・著者で検索）
     public function search(Request $request)
     {
         $title = $request->input('title');
-        $author = $request->input('author');
+        $authors = $request->input('authors');
 
         // Bookモデルを使ってクエリを組み立て
         $query = Book::query();
@@ -74,8 +91,8 @@ class BookController extends Controller
         }
 
         // 著者で検索
-        if ($author) {
-            $query->where('author', 'like', '%' . $author . '%');
+        if ($authors) {
+            $query->where('authors', 'like', '%' . $authors . '%');
         }
 
         // 検索結果を返す
