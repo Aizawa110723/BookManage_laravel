@@ -38,7 +38,7 @@ class BookController extends Controller
 
 
         // *-----------------------
-        // 初回のみAPIから書籍情報を取得し(seeder)、キャッシュされている場合はそのデータを使用
+        // 初回のみAPIから書籍情報を取得し(seeder)、キャッシュに格納された書籍データを取得
         $cacheKey = 'book_data_' . md5($title . $authors);
         $bookData = Cache::get($cacheKey);
 
@@ -56,9 +56,12 @@ class BookController extends Controller
         }
 
         // 画像のURLを取得して保存
-        $imageUrl = null;
-        if (isset($bookData['volumeInfo']['imageLinks']['thumbnail'])) {
-            $imageUrl = $this->googleBooksService->downloadAndStoreImage($bookData['volumeInfo']['imageLinks']['thumbnail']);
+        $imageUrl = $bookData['volumeInfo']['imageLinks']['thumbnail'] ?? null;
+        $imagePath = null;
+
+        // 画像URLが存在する場合、画像をダウンロードして保存
+        if ($imageUrl) {
+            $imagePath = $this->googleBooksService->downloadAndStoreImage($imageUrl);
         }
 
         // 書籍情報をデータベースに保存

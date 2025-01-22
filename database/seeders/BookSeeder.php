@@ -25,7 +25,9 @@ class BookSeeder extends Seeder
 
         // 初回実行時のみGoogle Books APIから書籍情報を取得
         if ($firstRun) {
-            $booksData = $this->googleBooksService->fetchBooks('わたしと小鳥とすずと', '金子みすゞ'); // 例えば検索
+
+            // 例えば、"わたしと小鳥とすずと" と "金子みすゞ" を検索
+            $booksData = $this->googleBooksService->fetchBooks('わたしと小鳥とすずと', '金子みすゞ');
 
             // レスポンス全体をログに出力して確認
             Log::info('Books Data:', ['booksData' => $booksData]);
@@ -33,14 +35,16 @@ class BookSeeder extends Seeder
             // ログにデータを出力して確認
             Log::info('Items:', ['items' => $booksData['items'] ?? 'No Items']);
 
-            // 情報がない場合は処理を停止
-            if (!is_array($booksData) || empty($booksData['items'])) {
-                echo "書籍情報が見つかりませんでした";
+            // アイテムがない場合のエラーハンドリング
+            if (empty($booksData)) {
+                Log::error("書籍情報が見つかりませんでした");
                 return;
             }
 
-            // $booksDataに'items'キーが存在するか確認
-            if ($booksData && isset($booksData['totalItems']) && $booksData['totalItems'] > 0) {
+            // 'items'キーが存在し、かつ空でないかをチェック
+            if (isset($booksData['items']) && is_array($booksData['items']) && count($booksData['items']) > 0) {
+
+                $items = $booksData['items'];
 
                 // 取得した書籍情報を最大10件までデータベースに保存
                 $items = $booksData['items'];

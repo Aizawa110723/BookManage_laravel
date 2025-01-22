@@ -40,7 +40,7 @@ class GoogleBooksService
 
             // Google Books API にリクエストを送信
             $response = Http::get('https://www.googleapis.com/books/v1/volumes', [
-                'q' => 'intitle:' . $title . '+inauthor:' . $authors,
+                'q' => 'intitle:' . urlencode($title) . '+inauthor:' . urlencode($authors),
             ]);
 
             // レスポンスの内容をログに出力
@@ -54,16 +54,14 @@ class GoogleBooksService
             if ($response->successful()) {
                 $items = $response->json()['items'] ?? [];
 
-                // アイテムが存在すれば最初の書籍情報を返す
                 if (!empty($items)) {
-                    // 初回実行フラグをfalseに更新
-                    Cache::put('first_run', false);
-
-                    return $items[0]; // 最初の書籍情報を返す
+                    $firstItem = $items[0];  // 最初の書籍情報を取得
+                    Log::info("First item data", ['item' => $firstItem]);
+                    return $firstItem;  // 最初の書籍情報を返す
+                } else {
+                    Log::info("No items found in the response.");
+                    return null;  // アイテムがない場合はnullを返す
                 }
-
-                // アイテムが空の場合はnullを返す
-                return null; // '該当なし'ではなくnullを返すことで、より適切に処理できる
             }
 
             // APIリクエストが失敗した場合、エラーログを出力
@@ -74,7 +72,7 @@ class GoogleBooksService
                 'response' => $response->body(),
             ]);
 
-            // APIリクエスト失敗時には適切なエラーメッセージを返す
+            // APIリクエスト失敗時にはエラーメッセージを返す
             return 'APIリクエストが失敗しました'; // エラー発生時のメッセージ
         }
 
