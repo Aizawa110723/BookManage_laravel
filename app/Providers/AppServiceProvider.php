@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\GoogleBooksService;
+use App\Services\ImageService;  // ImageService をインポート
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,9 +15,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        // GoogleBooksService をバインディング
-        $this->app->singleton(GoogleBooksService::class, function ($app) {
-            return new GoogleBooksService();
+        // GoogleBooksServiceをバインドするときにImageServiceもインジェクト
+        $this->app->bind(GoogleBooksService::class, function ($app) {
+            // ImageServiceを解決して渡す
+            return new GoogleBooksService($app->make(ImageService::class));
         });
     }
     /**

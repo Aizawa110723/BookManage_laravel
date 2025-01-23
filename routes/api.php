@@ -36,6 +36,7 @@ Route::get('/searchbooks', [BookController::class, 'search']);
 // 画像アップロード（POST）
 // もし画像アップロードをAPI経由で行う場合のルート
 Route::post('/upload', function (Request $request) {
+    
     // バリデーション（画像ファイルかどうか確認）
     $request->validate([
         'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',

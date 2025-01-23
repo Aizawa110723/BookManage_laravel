@@ -20,7 +20,7 @@ return [
     'allowed_methods' => ['*'],
 
     // 許可するオリジン（フロントエンドのURLを追加）
-    'allowed_origins' => ['http://localhost:5173', '*'],
+    'allowed_origins' => ['http://localhost:5173'],
 
     'allowed_origins_patterns' => [],
 
