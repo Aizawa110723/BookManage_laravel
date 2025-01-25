@@ -15,21 +15,12 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'storage/*'],
-
-    'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE'],
-
-    // 許可するオリジン（フロントエンドのURLを追加）
-    'allowed_origins' => ['http://localhost:5173'],
-
-    'allowed_origins_patterns' => [],
-
-    'allowed_headers' => ['*'],
-
+    'paths' => ['api/*', 'sanctum/csrf-cookie'], // CORSを適用するパス
+    'allowed_methods' => ['*'], // 全てのHTTPメソッドを許可
+    'allowed_origins' => ['*'], // 全てのオリジンを許可（開発中のみ）
+    'allowed_headers' => ['*'], // 全てのヘッダーを許可
+    'allowed_credentials' => false, // クッキー認証が不要な場合はfalse
     'exposed_headers' => [],
-
     'max_age' => 0,
-
-    'supports_credentials' => true,
 
 ];
