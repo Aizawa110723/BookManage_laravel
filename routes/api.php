@@ -24,6 +24,8 @@ Route::get('/', function () {
     return response()->json(['message' => 'ようこそ、APIトップページです']);
 });
 
+Route::get('/', [BookController::class, 'index']);
+
 // 本の一覧取得（GET）
 Route::get('/books', [BookController::class, 'index']);
 
@@ -34,10 +36,18 @@ Route::post('/books', [BookController::class, 'store']);
 // 検索用のルートを /searchbooks に変更
 Route::get('/searchbooks', [BookController::class, 'search']);
 
+
+// Route::middleware('cors')->get('/books', [BookController::class, 'index']);
+// Route::middleware('cors')->post('/books', [BookController::class, 'store']);
+// Route::get('/', [BookController::class, 'index'])->middleware('cors');
+
+
+
+// cors ミドルウェアが指定されているルートに対してのみ CORS ヘッダーが適用
 // 画像アップロード（POST）
 // もし画像アップロードをAPI経由で行う場合のルート
 Route::post('/upload', function (Request $request) {
-    
+
     // バリデーション（画像ファイルかどうか確認）
     $request->validate([
         'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
