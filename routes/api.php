@@ -4,6 +4,7 @@ use App\Models\Book;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\ImageController;
 use Illuminate\Support\Facades\Storage;
 
 
