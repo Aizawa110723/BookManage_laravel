@@ -37,7 +37,10 @@ class BookController extends Controller
 
         if (!$bookData) {
             // キャッシュにない場合、Google Books API から書籍情報を取得
-            $bookData = $this->googleBooksService->fetchBooks($title, $authors);
+            $bookData = $this->googleBooksService->fetchBooks([
+                'title' => $title,
+                'authors' => $authors
+            ]);
 
             if (!$bookData) {
                 return response()->json(['error' => '書籍情報が見つかりませんでした。'], 404);

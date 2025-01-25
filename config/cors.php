@@ -15,9 +15,9 @@ return [
     |
     */
 
-    'paths' => ['api/*','sanctum/csrf-cookie', 'storage/*'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'storage/*'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE'],
 
     // 許可するオリジン（フロントエンドのURLを追加）
     'allowed_origins' => ['http://localhost:5173'],
@@ -30,6 +30,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];

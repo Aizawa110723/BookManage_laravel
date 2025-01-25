@@ -34,6 +34,9 @@ class GoogleBooksService
         // Google Books APIへリクエスト
         $response = Http::get($url);
 
+        // APIレスポンスを確認
+        dd($response->json()); // ここでレスポンスをダンプしてみてください
+
         // APIリクエスト成功
         if ($response->successful()) {
             $items = $response->json()['items'] ?? [];
@@ -46,6 +49,8 @@ class GoogleBooksService
 
             // 画像URLの取得
             $imageUrl = $book['imageLinks']['thumbnail'] ?? null;
+            // 画像URLをログに記録
+            Log::info('Image URL:', ['url' => $imageUrl]);
 
             // 画像URLが存在すればダウンロードして保存
             $imagePath = null;
@@ -57,22 +62,22 @@ class GoogleBooksService
                 }
             }
 
-            // 著者名の重複を避けるために既存のデータベースを確認
-            foreach ($book['authors'] as $author) {
-                // 既に同じ著者が存在していないかチェック
-                $existingAuthor = Book::where('authors', 'LIKE', '%' . $author . '%')->first();
+            // 既存の書籍データを確認して重複を防ぐ
+            $bookExists = Book::where('title', $book['title'])
+                ->where('authors', 'LIKE', '%' . implode('%', $book['authors']) . '%')
+                ->exists();
 
-                if (!$existingAuthor) {
-                    // 存在しない場合は新しく保存
-                    Book::create([
-                        'title' => $book['title'],
-                        'authors' => $author,
-                        'publisher' => $book['publisher'] ?? 'Unknown',
-                        'published_date' => $book['publishedDate'] ?? 'Unknown',
-                        'description' => $book['description'] ?? 'No description available.',
-                        'image_url' => $imagePath, // ダウンロードした画像のURL
-                    ]);
-                }
+            // 既にデータが存在しない場合にのみ保存
+            if (!$bookExists) {
+                // 書籍をデータベースに保存
+                Book::create([
+                    'title' => $book['title'],
+                    'authors' => implode(', ', $book['authors']), // 複数の著者をカンマ区切りで保存
+                    'publisher' => $book['publisher'] ?? 'Unknown',
+                    'published_date' => $book['publishedDate'] ?? 'Unknown',
+                    'description' => $book['description'] ?? 'No description available.',
+                    'image_url' => $imagePath, // ダウンロードした画像のURL
+                ]);
             }
 
             // 書籍データを返す
