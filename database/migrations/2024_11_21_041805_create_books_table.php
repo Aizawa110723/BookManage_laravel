@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('year')->nullable();
             $table->string('genre')->nullable();
             $table->text('description')->nullable(); // 書籍の説明（オプション）
-            $table->date('published_date')->nullable();  // 出版日（オプション）
+            $table->string('isbn')->unique()->nullable();  // 出版日（オプション）
             $table->text('google_books_url')->nullable(); // Google BooksのURL（オプション）
             $table->string('image_path')->nullable();  // 画像のパス（オプション）
             $table->string('image_url')->nullable();   // 画像のURL
