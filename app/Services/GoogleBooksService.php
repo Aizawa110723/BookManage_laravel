@@ -23,6 +23,7 @@ class GoogleBooksService
      * @return \Illuminate\Http\JsonResponse
      */
     public function fetchBooks(array $bookData)
+
     {
         // フロントエンドから送られた書籍情報
         $title = urlencode($bookData['title']);
