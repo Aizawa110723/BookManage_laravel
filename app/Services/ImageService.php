@@ -26,9 +26,9 @@ class ImageService
                 Log::error('画像のダウンロードに失敗', ['url' => $imageUrl, 'status' => $response->status()]);
                 return '画像が取得できませんでした';
             }
-
             // 画像のコンテンツを取得
             $imageContents = $response->body();
+
 
             // 画像が取得できなかった場合
             if (!$imageContents) {
