@@ -5,13 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Book;
 use App\Services\GoogleBooksService;
-use App\Services\ImageService; // ImageServiceをインポート
+use App\Services\ImageService;
 use Illuminate\Support\Facades\Cache;
 
 class BookController extends Controller
 {
     protected $googleBooksService;
-    protected $imageService;  // ImageServiceのインスタンスを保持
+    protected $imageService;  // ImageServiceのインスタンスを保持・注入
 
     public function __construct(GoogleBooksService $googleBooksService, ImageService $imageService)
     {
@@ -64,10 +64,11 @@ class BookController extends Controller
             'title' => $bookData['title'],
             'authors' => implode(', ', $bookData['authors']),
             'publisher' => $bookData['publisher'] ?? 'No Publisher',
-            'year' => $bookData['publishedDate'] ?? 'Unknown',
-            'genre' => $bookData['categories'][0] ?? 'No Genre',
+            'published_date' => $bookData['publishedDate'] ?? 'Unknown',
+            'categories' => $bookData['categories'][0] ?? 'No Categories',
             'description' => $bookData['description'] ?? 'No Description',
-            'image_path' => $imagePath ?? 'No Image',  // 画像パスを保存
+            'image_path' => $imagePath ?? null,  // 画像パスを保存
+            'image_url' => $imageUrl ?? 'No Image',
         ]);
 
         // レスポンスを返す

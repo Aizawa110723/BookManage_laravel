@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Book extends Model
 {
     use HasFactory;
-    
+
     // このモデルで使うテーブル
     protected $table = 'books';
 
@@ -17,12 +17,16 @@ class Book extends Model
         'title',
         'author',
         'publisher',
-        'year',
-        'genre',
-        'description',
         'published_date',
-        'google_books_url',
+        'categories',
+        'description',
+        'infoLink',
         'image_path',
         'image_url',
+    ];
+
+    // 日付の形式変換
+    protected $casts = [
+        'published_date' => 'date',
     ];
 }
