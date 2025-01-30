@@ -6,88 +6,110 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Book;
+use App\Services\ImageService;
 
 class BookSeeder extends Seeder
 {
+    protected $imageService;
+
+    public function __construct(ImageService $imageService)
+    {
+        $this->imageService = $imageService;
+    }
+
     public function run()
     {
-        // 取り扱いたいジャンルの配列
-        $genres = [
-            'literature',  // 文学
-            'art',         // アート
-            'history',     // 歴史
-            'science',     // 科学
-        ];
+        // ランダムに保存されている書籍から title と authors を選ぶ
+        $book = Book::inRandomOrder()->first(); // ランダムに書籍1件を取得
 
-        // ランダムにジャンルを選ぶ
-        $randomGenre = $genres[array_rand($genres)];
+        // 書籍が存在する場合のみ処理
+        if ($book) {
+            $searchQuery = [
+                'title' => $book->title,
+                'authors' => $book->authors,
+            ];
 
-        // Open Library APIのURLをジャンルに基づいて設定
-        $url = "https://openlibrary.org/subjects/{$randomGenre}.json";
-
-        // Open Library APIを使って書籍データを取得する
-        $response = Http::get($url);
-
-        if ($response->successful()) {
-            $data = $response->json();
-            // ISBNリストを取得（例として最初の10件を取得）
-            $isbnList = array_slice(array_column($data['works'], 'isbn'), 0, 10);
-
-            // ISBNリストを使ってGoogle Books APIに問い合わせ
-            $this->fetchBooksFromGoogle($isbnList);
+            // Google Books APIから書籍情報を取得して保存
+            $this->fetchAndSaveBooksFromGoogle($searchQuery);
         } else {
-            Log::error("Failed to fetch ISBN list from Open Library API for genre: {$randomGenre}");
+            Log::warning('No books found in the database to seed.');
         }
     }
 
-    private function fetchBooksFromGoogle(array $isbnList)
+    /**
+     * Google Books APIから書籍データを取得してデータベースに保存
+     *
+     * @param array $bookData ['title' => 'タイトル', 'authors' => '著者']
+     * @return void
+     */
+    private function fetchAndSaveBooksFromGoogle(array $bookData)
     {
-        // ISBNリストを使ってGoogle Books APIにリクエストを送る
-        $isbnQuery = 'isbn:' . implode(' OR isbn:', $isbnList);
-        $url = 'https://www.googleapis.com/books/v1/volumes?q=' . $isbnQuery . '&maxResults=10';
+        // .envからAPIキーを取得
+        $apiKey = env('GOOGLE_BOOKS_API_KEY');
+
+        // Google Books APIのリクエストURLにAPIキーを追加
+        // title と authors のみを使って検索
+        // 最大10件
+        $title = urlencode($bookData['title']);
+        $authors = urlencode($bookData['authors']);
+        
+        $url = "https://www.googleapis.com/books/v1/volumes?q=intitle:{$title}+inauthor:{$authors}&key={$apiKey}&maxResults=10";
+
+        // Google Books APIへリクエスト
         $response = Http::get($url);
 
         if ($response->successful()) {
-            $booksData = $response->json();
+            $items = $response->json()['items'] ?? [];
 
-            foreach ($booksData['items'] as $item) {
-                // 書籍情報を取得
-                $title = $item['volumeInfo']['title'] ?? null;
-                $authors = $item['volumeInfo']['authors'] ?? null;
+            if (empty($items)) {
+                Log::info("No books found for title: {$bookData['title']} and authors: {$bookData['authors']}");
+                return;
+            }
 
-                // titleとauthorsが両方とも存在しない場合はスキップ
-                if (!$title || !$authors) {
-                    Log::info("Skipping book with missing title or authors.");
-                    continue;
+            // 最大10件の書籍情報をDBに保存
+            foreach ($items as $item) {
+                $book = $item['volumeInfo'];
+
+                // title と authors が完全一致する場合にのみ処理を進める
+                if (
+                    stripos($book['title'], $bookData['title']) !== false &&
+                    stripos($book['authors'][0], $bookData['authors']) !== false
+                ) {
+
+                    // 画像URLの取得
+                    $imageUrl = $book['imageLinks']['thumbnail'] ?? null;
+
+                    // 画像URLが存在すれば画像を保存
+                    $imagePath = null;
+                    if ($imageUrl) {
+                        // ImageServiceを使って画像を保存
+                        $imagePath = $this->imageService->downloadAndStoreImage($imageUrl);
+                        if ($imagePath === '画像のダウンロードに失敗しました') {
+                            Log::warning('Failed to download image for book: ' . $book['title']);
+                            $imagePath = null;
+                        }
+                    }
+
+                    // データベースに保存
+                    Book::firstOrCreate(
+                        ['title' => $book['title'], 'authors' => implode(', ', $book['authors'])],  // 重複を避ける
+                        [
+                            'title' => $book['title'],
+                            'authors' => implode(', ', $book['authors']),
+                            'publisher' => $book['publisher'] ?? 'Unknown',
+                            'published_date' => $book['publishedDate'] ?? 'Unknown',
+                            'categories' => isset($book['categories']) ? implode(', ', $book['categories']) : 'Unknown',
+                            'description' => $book['description'] ?? 'No description available.',
+                            'image_path' => $imagePath ?? 'No Image',
+                            'image_url' => $imageUrl ?? 'No Image URL',
+                        ]
+                    );
+
+                    Log::info("Book saved: {$book['title']}");
                 }
-
-                // その他の書籍情報を取得
-                $publisher = $item['volumeInfo']['publisher'] ?? 'No Publisher';
-                $description = $item['volumeInfo']['description'] ?? 'No Description';
-                $imageUrl = $item['volumeInfo']['imageLinks']['thumbnail'] ?? null;
-                $imagePath = null;
-
-                // 画像URLがあれば画像をダウンロードして保存
-                if ($imageUrl) {
-                    // 画像保存処理を追加
-                    $imagePath = app('App\Services\ImageService')->downloadAndStoreImage($imageUrl);
-                }
-
-                // 書籍データをデータベースに保存
-                Book::firstOrCreate(
-                    ['title' => $title, 'authors' => implode(', ', $authors)],  // authorsは配列なので文字列に変換
-                    [
-                        'title' => $title,
-                        'authors' => implode(', ', $authors),  // 複数の著者をカンマ区切りで保存
-                        'publisher' => $publisher,
-                        'description' => $description,
-                        'image_path' => $imagePath ?? 'No Image',
-                        'image_url' => $imageUrl ?? 'No Image URL',
-                    ]
-                );
             }
         } else {
-            Log::error('Failed to fetch books from Google Books API.');
+            Log::error('Failed to fetch book data from Google API for ' . $bookData['title']);
         }
     }
 }
