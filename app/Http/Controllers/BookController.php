@@ -37,24 +37,22 @@ class BookController extends Controller
 
         if (!$bookData) {
             // キャッシュにない場合、Google Books API から書籍情報を取得
-            $response = $this->googleBooksService->fetchBooks([
+            $bookData = $this->googleBooksService->fetchBooks([
                 'title' => $title,
                 'authors' => $authors
             ]);
 
-            // fetchBooksが返すのはJsonResponseなので、JSONデータを取得
-            if ($response->getStatusCode() != 200) {
+            // 書籍データが見つからなかった場合
+            if (!$bookData) {
                 return response()->json(['error' => '書籍情報が見つかりませんでした。'], 404);
             }
-
-            $bookData = $response->json();  // レスポンスのJSONデータを取得
 
             // API から取得したデータをキャッシュに保存
             Cache::put($cacheKey, $bookData, now()->addDay()); // 1日間キャッシュ
         }
 
         // 画像URLがあれば画像をダウンロードして保存
-        $imageUrl = $bookData['image_url'] ?? null; // fetchBooksが返す画像URLを取得
+        $imageUrl = $bookData['imageLinks']['thumbnail'] ?? null; // fetchBooksが返す画像URLを取得
         $imagePath = null;
 
         if ($imageUrl) {
@@ -66,43 +64,44 @@ class BookController extends Controller
         $book = Book::create([
             'title' => $bookData['title'],
             'authors' => implode(', ', $bookData['authors']),
-            'publisher' => $bookData['publisher'] ?? 'No Publisher',
-            'published_date' => $bookData['publishedDate'] ?? 'Unknown',
-            'categories' => $bookData['categories'][0] ?? 'No Categories',
-            'description' => $bookData['description'] ?? 'No Description',
-            'image_path' => $imagePath ?? null,  // 画像パスを保存
-            'image_url' => $imageUrl ?? 'No Image',
+            'publisher' => $bookData['publisher'] ?? 'Unknown',
+            'year' => $bookData['publishedDate'] ?? 'Unknown',
+            'genre' => isset($bookData['categories']) ? implode(', ', $bookData['categories']) : 'Unknown',
+            'description' => $bookData['description'] ?? 'No description available.',
+            'google_books_url' => $googlebooksurl ?? 'No URL',
+            'image_path' => $imagePath ?? 'No Image',
+            'image_url' => $imageUrl ?? 'No Image URL',
         ]);
 
         // レスポンスを返す
         return response()->json(['message' => '書籍が追加されました！', 'book' => $book], 201);
     }
 
-    public function index()
-    {
-        // すべての書籍を取得してページネーション
-        $books = Book::paginate(10);
-        return response()->json($books);
-    }
+    // public function index()
+    // {
+    //     // すべての書籍を取得してページネーション
+    //     $books = Book::paginate(10);
+    //     return response()->json($books);
+    // }
 
-    public function search(Request $request)
-    {
-        // タイトルと著者をクエリパラメータから取得
-        $title = $request->input('title');
-        $authors = $request->input('authors');
+    // public function search(Request $request)
+    // {
+    //     // タイトルと著者をクエリパラメータから取得
+    //     $title = $request->input('title');
+    //     $authors = $request->input('authors');
 
-        // 書籍情報の検索
-        $query = Book::query();
+    //     // 書籍情報の検索
+    //     $query = Book::query();
 
-        if ($title) {
-            $query->where('title', 'like', '%' . $title . '%');
-        }
+    //     if ($title) {
+    //         $query->where('title', 'like', '%' . $title . '%');
+    //     }
 
-        if ($authors) {
-            $query->where('authors', 'like', '%' . $authors . '%');
-        }
+    //     if ($authors) {
+    //         $query->where('authors', 'like', '%' . $authors . '%');
+    //     }
 
-        // 検索結果を返す
-        return response()->json($query->get());
-    }
+    //     // 検索結果を返す
+    //     return response()->json($query->get());
+    // }
 }

@@ -16,10 +16,10 @@ return new class extends Migration
             $table->string('title'); // 空不可
             $table->string('authors'); // 空不可
             $table->string('publisher')->nullable();
-            $table->date('published_date')->nullable();
-            $table->text('categories')->nullable();
+            $table->date('year')->nullable();
+            $table->text('genre')->nullable();
             $table->text('description')->nullable(); // 書籍の説明（オプション）
-            $table->text('infoLink')->nullable(); // Google BooksのURL（オプション）
+            $table->text('google_books_url')->nullable(); // Google BooksのURL（オプション）
             $table->string('image_path')->nullable();  // 画像のパス（オプション）
             $table->string('image_url')->nullable();   // 画像のURL
             $table->timestamps();

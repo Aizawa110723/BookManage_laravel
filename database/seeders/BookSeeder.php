@@ -52,7 +52,7 @@ class BookSeeder extends Seeder
         // 最大10件
         $title = urlencode($bookData['title']);
         $authors = urlencode($bookData['authors']);
-        
+
         $url = "https://www.googleapis.com/books/v1/volumes?q=intitle:{$title}+inauthor:{$authors}&key={$apiKey}&maxResults=10";
 
         // Google Books APIへリクエスト
@@ -97,9 +97,10 @@ class BookSeeder extends Seeder
                             'title' => $book['title'],
                             'authors' => implode(', ', $book['authors']),
                             'publisher' => $book['publisher'] ?? 'Unknown',
-                            'published_date' => $book['publishedDate'] ?? 'Unknown',
-                            'categories' => isset($book['categories']) ? implode(', ', $book['categories']) : 'Unknown',
+                            'year' => $book['publishedDate'] ?? 'Unknown',
+                            'genre' => isset($book['categories']) ? implode(', ', $book['categories']) : 'Unknown',
                             'description' => $book['description'] ?? 'No description available.',
+                            'google_books_url' => $googlebooksurl ?? 'No URL',
                             'image_path' => $imagePath ?? 'No Image',
                             'image_url' => $imageUrl ?? 'No Image URL',
                         ]
