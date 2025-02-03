@@ -15,9 +15,9 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'], // CORSを適用するパス
+    'paths' => ['api/*', 'sanctum/csrf-cookie'], // CORSクッキーを適用するパス
     'allowed_methods' => ['*'], // 全てのHTTPメソッドを許可
-    'allowed_origins' => ['http://localhost:3000'], // 全てのオリジンを許可（開発中のみ）
+    'allowed_origins' => ['http://localhost:5173'], // 全てのオリジンを許可（開発中のみ）
     'allowed_origins_patterns' => [], //正規表現によるオリジン指定。preg_matchの引数としてそのまま渡される
     'allowed_headers' => ['*'], // 全てのヘッダーを許可
     'allowed_credentials' => false, // クッキー認証が不要な場合はfalse
@@ -26,5 +26,5 @@ return [
 
     // Access-Control-Allow-Credentialsヘッダーを設定する。
     //falsy値を指定すると出力せず、truthyな値を渡せばtrueが出力される
-    'supports_credentials' => true,
+    'supports_credentials' => false,
 ];
