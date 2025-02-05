@@ -31,25 +31,17 @@ class BookController extends Controller
         $title = $validated['title'];
         $authors = $validated['authors'];
 
-        // キャッシュに保存されている書籍情報を確認
-        $cacheKey = 'book_data_' . md5($title . $authors);
-        $bookData = Cache::get($cacheKey);
+        // Google Books API から書籍情報を取得
+        $bookData = $this->googleBooksService->fetchBooks([
+            'title' => $title,
+            'authors' => $authors
+        ]);
 
+        // 書籍データが見つからなかった場合
         if (!$bookData) {
-            // キャッシュにない場合、Google Books API から書籍情報を取得
-            $bookData = $this->googleBooksService->fetchBooks([
-                'title' => $title,
-                'authors' => $authors
-            ]);
-
-            // 書籍データが見つからなかった場合
-            if (!$bookData) {
-                return response()->json(['error' => '書籍情報が見つかりませんでした。'], 404);
-            }
-
-            // API から取得したデータをキャッシュに保存
-            Cache::put($cacheKey, $bookData, now()->addDay()); // 1日間キャッシュ
+            return response()->json(['error' => '書籍情報が見つかりませんでした。'], 404);
         }
+
 
         // 画像URLがあれば画像をダウンロードして保存
         $imageUrl = $bookData['imageLinks']['thumbnail'] ?? null; // fetchBooksが返す画像URLを取得
@@ -77,31 +69,31 @@ class BookController extends Controller
         return response()->json(['message' => '書籍が追加されました！', 'book' => $book], 201);
     }
 
-    // public function index()
-    // {
-    //     // すべての書籍を取得してページネーション
-    //     $books = Book::paginate(10);
-    //     return response()->json($books);
-    // }
+    public function index()
+    {
+        // すべての書籍を取得してページネーション
+        $books = Book::paginate(10);
+        return response()->json($books);
+    }
 
-    // public function search(Request $request)
-    // {
-    //     // タイトルと著者をクエリパラメータから取得
-    //     $title = $request->input('title');
-    //     $authors = $request->input('authors');
+    public function search(Request $request)
+    {
+        // タイトルと著者をクエリパラメータから取得
+        $title = $request->input('title');
+        $authors = $request->input('authors');
 
-    //     // 書籍情報の検索
-    //     $query = Book::query();
+        // 書籍情報の検索
+        $query = Book::query();
 
-    //     if ($title) {
-    //         $query->where('title', 'like', '%' . $title . '%');
-    //     }
+        if ($title) {
+            $query->where('title', 'like', '%' . $title . '%');
+        }
 
-    //     if ($authors) {
-    //         $query->where('authors', 'like', '%' . $authors . '%');
-    //     }
+        if ($authors) {
+            $query->where('authors', 'like', '%' . $authors . '%');
+        }
 
-    //     // 検索結果を返す
-    //     return response()->json($query->get());
-    // }
+        // 検索結果を返す
+        return response()->json($query->get());
+    }
 }
