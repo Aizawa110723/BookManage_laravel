@@ -30,6 +30,10 @@ Route::get('/books', [BookController::class, 'index'])->middleware('cors');
 Route::get('/searchbooks', [BookController::class, 'search'])->middleware('cors');
 
 
+// CSRFトークンのエンドポイント
+Route::get('/get-csrf-token', [BookController::class, 'getCsrfToken']);
+
+
 
 // Route::middleware('cors')->get('/books', [BookController::class, 'index']);
 // Route::middleware('cors')->post('/books', [BookController::class, 'store']);

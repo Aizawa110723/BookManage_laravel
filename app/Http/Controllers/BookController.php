@@ -7,6 +7,7 @@ use App\Models\Book;
 use App\Services\GoogleBooksService;
 use App\Services\ImageService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Session;  // Sessionファサード
 
 class BookController extends Controller
 {
@@ -18,6 +19,14 @@ class BookController extends Controller
         // コンストラクタでサービスを注入
         $this->googleBooksService = $googleBooksService;
         $this->imageService = $imageService;  // ImageServiceの注入
+    }
+
+    // CSRFトークンを返すアクションを追加
+    public function getCsrfToken()
+    {
+        return response()->json([
+            'csrf_token' => csrf_token(),
+        ]);
     }
 
     public function store(Request $request)

@@ -16,10 +16,10 @@ return [
     */
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'], // CORSクッキーを適用するパス
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     'allowed_origins' => ['http://localhost:5173'],
     'allowed_origins_patterns' => [], //正規表現によるオリジン指定。preg_matchの引数としてそのまま渡される
-    'allowed_headers' => ['*'], // 全てのヘッダーを許可
+    'allowed_headers' => ['Content-Type', 'X-XSRF-TOKEN', 'X-Requested-With', 'Authorization', 'Accept'], // 全てのヘッダーを許可
 
     'exposed_headers' => [], //Access-Control-Expose-Headers レスポンスヘッダーの指定
 

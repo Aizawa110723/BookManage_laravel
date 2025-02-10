@@ -18,7 +18,10 @@ return [
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'file'),
+    'driver' => env('SESSION_DRIVER', 'cookie'),
+    'session_lifetime' => 120, // セッションの有効期限（分単位）
+    'same_site' => 'None',  // クロスサイトリクエストでのCSRFトークン使用のため、SameSiteをNoneに設定
+    'secure' => env('SESSION_SECURE_COOKIE', false), // HTTPS接続を使用する場合、trueに設定
 
     /*
     |--------------------------------------------------------------------------
@@ -128,7 +131,7 @@ return [
 
     'cookie' => env(
         'SESSION_COOKIE',
-        Str::slug(env('APP_NAME', 'laravel'), '_').'_session'
+        Str::slug(env('APP_NAME', 'laravel'), '_') . '_session'
     ),
 
     /*
