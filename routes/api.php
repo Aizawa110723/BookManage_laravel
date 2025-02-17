@@ -21,14 +21,17 @@ Route::get('/', function () {
 });
 
 // 本の登録（POST）にはCORSを適用
-Route::post('/books', [BookController::class, 'store'])->middleware('cors');
+Route::post('/books', [BookController::class, 'store'])->middleware(['cors', 'custom.csrf']);
+
+// 本の検索（POST）にもCORSを適用
+Route::post('/searchbooks', [BookController::class, 'search'])->middleware(['cors', 'custom.csrf']);
 
 // 本の一覧取得（GET）にもCORSを適用
-Route::get('/books', [BookController::class, 'index'])->middleware('cors');
+Route::get('/books', [BookController::class, 'index'])->middleware(['cors', 'custom.csrf']);
 
-// 本の検索（GET）にもCORSを適用
-Route::get('/searchbooks', [BookController::class, 'search'])->middleware('cors');
 
+// 作成したミドルウェア'custom.csrf'の適用/CSRF 保護のミドルウェアを適用しないようにする
+Route::get('/get-csrf-token', [BookController::class, 'getCsrfToken'])->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 // CSRFトークンのエンドポイント
 Route::get('/get-csrf-token', [BookController::class, 'getCsrfToken']);

@@ -24,9 +24,7 @@ class BookController extends Controller
     // CSRFトークンを返すアクションを追加
     public function getCsrfToken()
     {
-        return response()->json([
-            'csrf_token' => csrf_token(),
-        ]);
+        return response()->json(['csrf_token' => csrf_token()]);
     }
 
     public function store(Request $request)

@@ -28,6 +28,12 @@ class Kernel extends HttpKernel
      *
      * @var array<string, array<int, class-string|string>>
      */
+    protected $routeMiddleware = [
+        // 他のミドルウェア
+        'auth' => \App\Http\Middleware\Authenticate::class,
+        'custom.csrf' => \App\Http\Middleware\CustomCsrfMiddleware::class,  // ここに追加
+    ];
+
     protected $middlewareGroups = [
         'web' => [
             \App\Http\Middleware\EncryptCookies::class,
