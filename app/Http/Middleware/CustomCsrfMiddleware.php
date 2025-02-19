@@ -17,7 +17,7 @@ class CustomCsrfMiddleware
         if (!$csrfToken || !hash_equals(csrf_token(), $csrfToken)) {
             
             // トークンが一致しない場合は403エラーを返す
-            return response()->json(['error' => 'CSRFトークンが無効です。'], Response::HTTP_FORBIDDEN);
+            return response()->json(['error' => '無効なトークンです'], Response::HTTP_FORBIDDEN);
         }
 
         // トークンが一致する場合、次の処理に進む
