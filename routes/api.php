@@ -30,14 +30,5 @@ Route::post('/searchbooks', [BookController::class, 'search'])->middleware(['cor
 Route::get('/books', [BookController::class, 'index'])->middleware(['cors', 'custom.csrf']);
 
 
-// 作成したミドルウェア'custom.csrf'の適用/CSRF 保護のミドルウェアを適用しないようにする
+// 作成したミドルウェア'custom.csrf'の適用/ CSRFチェックを無効にする
 Route::get('/get-csrf-token', [BookController::class, 'getCsrfToken'])->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-
-// CSRFトークンのエンドポイント
-Route::get('/get-csrf-token', [BookController::class, 'getCsrfToken']);
-
-
-
-// Route::middleware('cors')->get('/books', [BookController::class, 'index']);
-// Route::middleware('cors')->post('/books', [BookController::class, 'store']);
-// Route::get('/', [BookController::class, 'index'])->middleware('cors');

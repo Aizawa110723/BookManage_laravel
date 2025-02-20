@@ -14,8 +14,6 @@ class Kernel extends HttpKernel
      * @var array<int, class-string|string>
      */
     protected $middleware = [
-        \App\Http\Middleware\CorsMiddleware::class,
-        \Illuminate\Http\Middleware\HandleCors::class,
         \App\Http\Middleware\TrustProxies::class,
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
@@ -29,7 +27,6 @@ class Kernel extends HttpKernel
      * @var array<string, array<int, class-string|string>>
      */
     protected $routeMiddleware = [
-        // 他のミドルウェア
         'auth' => \App\Http\Middleware\Authenticate::class,
         'custom.csrf' => \App\Http\Middleware\CustomCsrfMiddleware::class,  // ここに追加
     ];
@@ -49,7 +46,6 @@ class Kernel extends HttpKernel
             'throttle:api',
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
-            \App\Http\Middleware\VerifyCsrfToken::class,  // APIにもCSRFを有効にする
             \Illuminate\Routing\Middleware\ThrottleRequests::class . ':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
