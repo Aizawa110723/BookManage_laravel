@@ -34,3 +34,12 @@ Route::get('/books', [BookController::class, 'index'])->middleware(['cors', 'cus
 Route::get('/get-csrf-token', function () {
     return response()->json(['csrf_token' => csrf_token()]);  // トークンをJSON形式で返す
 });
+
+// web.phpでCSRFトークンのミドルウェアを適用
+Route::middleware('web')->group(function () {
+    Route::post('/books', [BookController::class, 'store']);
+});
+
+
+// CSRF保護をAPIにも適用
+Route::middleware(['web', 'csrf'])->post('/books', [BookController::class, 'store']);

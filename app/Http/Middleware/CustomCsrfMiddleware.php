@@ -14,8 +14,8 @@ class CustomCsrfMiddleware
         // ヘッダーからCSRFトークンを取得
         $csrfToken = $request->header('X-XSRF-TOKEN');
 
-        Log::info('Received CSRF Token:', ['csrf_token' => $csrfToken]);
-        Log::info('Expected CSRF Token:', ['expected_token' => csrf_token()]);
+        Log::info('Received CSRF Token:', ['csrf_token' => $csrfToken]);  // リクエストから受け取ったトークン
+        Log::info('Expected CSRF Token:', ['expected_token' => csrf_token()]);  // Laravel が期待しているトークン
 
 
         // CSRFトークンが一致するか確認

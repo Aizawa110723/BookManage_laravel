@@ -21,7 +21,7 @@ return [
     'allowed_origins_patterns' => [], //正規表現によるオリジン指定。preg_matchの引数としてそのまま渡される
     'allowed_headers' => ['Content-Type', 'X-XSRF-TOKEN', 'X-Requested-With', 'Authorization', 'Accept'], // 全てのヘッダーを許可
 
-    'exposed_headers' => [], //Access-Control-Expose-Headers レスポンスヘッダーの指定
+    'exposed_headers' => ['X-XSRF-TOKEN'], //Access-Control-Expose-Headers レスポンスヘッダーの指定
 
     'max_age' => 0,
 
