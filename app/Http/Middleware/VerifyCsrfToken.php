@@ -15,31 +15,32 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        'api/*',  // APIルートはCSRFトークン検証をスキップ
+        // APIエンドポイントをCSRF保護から除外
+        // 'api/*',  // APIルートはCSRFトークン検証をスキップ
     ];
 
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
-     */
-    public function handle($request, Closure $next)
-    {
+    // /**
+    //  * Handle an incoming request.
+    //  *
+    //  * @param  \Illuminate\Http\Request  $request
+    //  * @param  \Closure  $next
+    //  * @return mixed
+    //  */
+    // public function handle($request, Closure $next)
+    // {
         
-        // CSRFトークンが期限切れの場合にカスタマイズされたエラーハンドリングを追加
-        try {
-            // 親クラスのhandleメソッドを呼び出す（CSRFトークン検証）
-            return parent::handle($request, $next);
-        } catch (HttpException $e) {
-            // トークン期限切れの場合に419エラーを返す
-            if ($e->getStatusCode() === 419) {
-                return response()->json(['error' => 'CSRF token expired'], 419);
-            }
+    //     // CSRFトークンが期限切れの場合にカスタマイズされたエラーハンドリングを追加
+    //     try {
+    //         // 親クラスのhandleメソッドを呼び出す（CSRFトークン検証）
+    //         return parent::handle($request, $next);
+    //     } catch (HttpException $e) {
+    //         // トークン期限切れの場合に419エラーを返す
+    //         if ($e->getStatusCode() === 419) {
+    //             return response()->json(['error' => 'CSRF token expired'], 419);
+    //         }
 
-            // その他のエラーはそのまま処理
-            throw $e;
-        }
-    }
-}
+    //         // その他のエラーはそのまま処理
+    //         throw $e;
+    //     }
+    // }
+};

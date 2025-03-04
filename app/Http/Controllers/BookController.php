@@ -21,11 +21,11 @@ class BookController extends Controller
         $this->imageService = $imageService;  // ImageServiceの注入
     }
 
-    // CSRFトークンを返すアクションを追加
-    public function getCsrfToken()
-    {
-        return response()->json(['csrf_token' => csrf_token()]);
-    }
+    // // CSRFトークンを返すアクションを追加
+    // public function getCsrfToken()
+    // {
+    //     return response()->json(['csrf_token' => csrf_token()]);
+    // }
 
     public function store(Request $request)
     {

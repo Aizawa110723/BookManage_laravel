@@ -15,7 +15,7 @@ use App\Http\Controllers\BookController;
 |
 */
 
-// トップページはCORSなし
+// トップページ
 Route::get('/', function () {
     return response()->json(['message' => 'ようこそ、APIトップページです']);
 });
@@ -29,17 +29,21 @@ Route::post('/searchbooks', [BookController::class, 'search'])->middleware(['cor
 // 本の一覧取得（GET）にもCORSを適用
 Route::get('/books', [BookController::class, 'index'])->middleware(['cors', 'custom.csrf']);
 
+// // CSRFトークンを取得するAPIエンドポイント（テスト用）
+// Route::get('/get-csrf-token', function () {
+//     return response()->json(['csrf_token' => csrf_token()]);
+// });
 
-// 作成したミドルウェア'custom.csrf'の適用/ トークンをJSON形式で返す
-Route::get('/get-csrf-token', function () {
-    return response()->json(['csrf_token' => csrf_token()]);  // トークンをJSON形式で返す
-});
+// // 作成したミドルウェア'custom.csrf'の適用/ トークンをJSON形式で返す
+// Route::get('/get-csrf-token', function () {
+//     return response()->json(['csrf_token' => csrf_token()]);  // トークンをJSON形式で返す
+// });
 
-// web.phpでCSRFトークンのミドルウェアを適用
-Route::middleware('web')->group(function () {
-    Route::post('/books', [BookController::class, 'store']);
-});
+// // web.phpでCSRFトークンのミドルウェアを適用
+// Route::middleware('web')->group(function () {
+//     Route::post('/books', [BookController::class, 'store']);
+// });
 
 
-// CSRF保護をAPIにも適用
-Route::middleware(['web', 'csrf'])->post('/books', [BookController::class, 'store']);
+// // CSRF保護をAPIにも適用
+// Route::middleware(['web', 'csrf'])->post('/books', [BookController::class, 'store']);

@@ -14,8 +14,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
-        // BookSeeder を呼び出す
-        $this->call(BookSeeder::class);
+        // // BookSeeder を呼び出す
+        // $this->call(BookSeeder::class);
 
         // \App\Models\User::factory(10)->create();
 
