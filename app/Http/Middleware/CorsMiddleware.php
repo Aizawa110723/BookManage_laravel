@@ -23,7 +23,8 @@ class CorsMiddleware
             return response()->json([], 200)
                 ->header('Access-Control-Allow-Origin', $allowedOrigins)
                 ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, X-XSRF-TOKEN, X-Requested-With, Authorization');
+                ->header('Access-Control-Allow-Headers', 'Content-Type, X-XSRF-TOKEN, X-Requested-With, Authorization')
+                ->header('Access-Control-Allow-Credentials', 'true');  // クレデンシャルを許可
         }
 
         // 次のミドルウェア（またはコントローラ）を実行し、レスポンスを取得

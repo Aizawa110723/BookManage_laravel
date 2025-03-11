@@ -21,23 +21,27 @@ Route::get('/', function () {
 });
 
 // 本の登録（POST）にはCORSを適用
-Route::post('/books', [BookController::class, 'store'])->middleware(['cors', 'custom.csrf']);
+Route::post('/books', [BookController::class, 'store'])->middleware(['cors']);
 
 // 本の検索（POST）にもCORSを適用
-Route::post('/searchbooks', [BookController::class, 'search'])->middleware(['cors', 'custom.csrf']);
+Route::post('/searchbooks', [BookController::class, 'search'])->middleware(['cors']);
 
 // 本の一覧取得（GET）にもCORSを適用
-Route::get('/books', [BookController::class, 'index'])->middleware(['cors', 'custom.csrf']);
+Route::get('/books', [BookController::class, 'index'])->middleware(['cors']);
+
+
+
+// // 作成したミドルウェア'custom.csrf'の適用/ トークンをJSON形式で返す
+// Route::get('/get-csrf-token', function () {
+//     return response()->json(['csrf_token' => csrf_token()]);  // トークンをJSON形式で返す
+// });
+
 
 // // CSRFトークンを取得するAPIエンドポイント（テスト用）
 // Route::get('/get-csrf-token', function () {
 //     return response()->json(['csrf_token' => csrf_token()]);
 // });
 
-// // 作成したミドルウェア'custom.csrf'の適用/ トークンをJSON形式で返す
-// Route::get('/get-csrf-token', function () {
-//     return response()->json(['csrf_token' => csrf_token()]);  // トークンをJSON形式で返す
-// });
 
 // // web.phpでCSRFトークンのミドルウェアを適用
 // Route::middleware('web')->group(function () {

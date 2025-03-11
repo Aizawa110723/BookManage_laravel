@@ -8,6 +8,7 @@ use App\Services\GoogleBooksService;
 use App\Services\ImageService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;  // Sessionファサード
+use Illuminate\Support\Facades\Log;
 
 class BookController extends Controller
 {
@@ -49,6 +50,8 @@ class BookController extends Controller
             return response()->json(['error' => '書籍情報が見つかりませんでした。'], 404);
         }
 
+        // // `volumeInfo`から情報を取得
+        // $volumeInfo = $bookData['items'][0]['volumeInfo'];
 
         // 画像URLがあれば画像をダウンロードして保存
         $imageUrl = $bookData['imageLinks']['thumbnail'] ?? null; // fetchBooksが返す画像URLを取得
@@ -57,6 +60,9 @@ class BookController extends Controller
         if ($imageUrl) {
             // ImageServiceを使って画像をダウンロードし、保存
             $imagePath = $this->imageService->downloadAndStoreImage($imageUrl);
+        } else {
+            // 画像がない場合の処理
+            Log::warning('No image found for book: ' . $bookData['title']);
         }
 
         // 書籍情報をDBに保存
@@ -67,7 +73,7 @@ class BookController extends Controller
             'year' => $bookData['publishedDate'] ?? 'Unknown',
             'genre' => isset($bookData['categories']) ? implode(', ', $bookData['categories']) : 'Unknown',
             'description' => $bookData['description'] ?? 'No description available.',
-            'google_books_url' => $googlebooksurl ?? 'No URL',
+            'google_books_url' => $googlebooksurl['infoLink'] ?? 'No URL',
             'image_path' => $imagePath ?? 'No Image',
             'image_url' => $imageUrl ?? 'No Image URL',
         ]);

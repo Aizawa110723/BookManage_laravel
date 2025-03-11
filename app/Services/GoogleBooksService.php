@@ -58,7 +58,13 @@ class GoogleBooksService
             }
 
             // ここではフロントから送られた情報に基づき1冊の情報を取得
-            $book = $items[0]['volumeInfo']; // 最初の本を取得（APIレスポンスが1冊ならこれが唯一の情報）
+            $book = $items[0]['volumeInfo'] ?? null;  // volumeInfoが存在しない場合
+
+            // volumeInfoが存在しない場合の処理
+            if (!$book) {
+                Log::error('No valid book data found from API');
+                return null;  // bookがない場合はnullを返す
+            }
 
             // 画像URLの取得
             $imageUrl = $book['imageLinks']['thumbnail'] ?? null;
