@@ -14,6 +14,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
+        // BookSeederを実行
+        $this->call(BookSeeder::class);
+
         // // BookSeeder を呼び出す
         // $this->call(BookSeeder::class);
 

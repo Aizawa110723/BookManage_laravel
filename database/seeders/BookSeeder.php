@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -18,41 +19,64 @@ class BookSeeder extends Seeder
 
     public function run()
     {
-        // ランダムに保存されている書籍から title と authors を選ぶ
-        $book = Book::inRandomOrder()->first(); // ランダムに書籍1件を取得
+        // ジャンルのリストを定義
+        $genres = [
+            'Fiction',       // フィクション（文学・評論）
+            'Biography & Memoir', // 自伝・伝記
+            'Nonfiction',    // ノンフィクション
+            'Fantasy & Science Fiction', // ファンタジー・SF
+            'Mystery & Thrillers', // ミステリー・推理
+            'Education & Teaching', // 教育・学習
+            'Business & Economics', // ビジネス・経済
+            'History',       // 歴史・社会
+            'Art & Architecture', // アート・建築・デザイン
+            'Philosophy',    // 人文・思想・宗教
+            'Science & Technology', // 科学・テクノロジー・プログラミング
+            'Health & Wellness',    // 健康・ライフスタイル
+            'Travel',        // 旅行・ガイド
+            'Cooking & Food' // 料理・グルメ
+        ];
 
-        // 書籍が存在する場合のみ処理
-        if ($book) {
-            $searchQuery = [
-                'title' => $book->title,
-                'authors' => $book->authors,
-            ];
-
-            // Google Books APIから書籍情報を取得して保存
-            $this->fetchAndSaveBooksFromGoogle($searchQuery);
-        } else {
-            Log::warning('No books found in the database to seed.');
+        // 各ジャンルから1件ずつ書籍情報を取得
+        foreach ($genres as $genre) {
+            $this->fetchAndSaveBookByGenre($genre);
         }
     }
 
     /**
-     * Google Books APIから書籍データを取得してデータベースに保存
+     * ジャンルごとに書籍情報を取得して保存
      *
-     * @param array $bookData ['title' => 'タイトル', 'authors' => '著者']
+     * @param string $genre ジャンル名
      * @return void
      */
-    private function fetchAndSaveBooksFromGoogle(array $bookData)
+    private function fetchAndSaveBookByGenre($genre)
     {
+
+        // ジャンルの英語名を日本語に変換
+        $genreMapping = [
+            'Fiction' => '文学・評論',
+            'Biography & Memoir' => '自伝・伝記',
+            'Nonfiction' => 'ノンフィクション',
+            'Fantasy & Science Fiction' => 'ファンタジー・SF',
+            'Mystery & Thrillers' => 'ミステリー・推理',
+            'Education & Teaching' => '教育・学習',
+            'Business & Economics' => 'ビジネス・経済',
+            'History' => '歴史・社会',
+            'Art & Architecture' => 'アート・建築・デザイン',
+            'Philosophy' => '人文・思想・宗教',
+            'Science & Technology' => '科学・テクノロジー・プログラミング',
+            'Health & Wellness' => '健康・ライフスタイル',
+            'Travel' => '旅行・ガイド',
+            'Cooking & Food' => '料理・グルメ',
+        ];
+
+        $genreJapanese = $genreMapping[$genre] ?? $genre; // 日本語に変換
+
         // .envからAPIキーを取得
         $apiKey = env('GOOGLE_BOOKS_API_KEY');
 
         // Google Books APIのリクエストURLにAPIキーを追加
-        // title と authors のみを使って検索
-        // 最大10件
-        $title = urlencode($bookData['title']);
-        $authors = urlencode($bookData['authors']);
-
-        $url = "https://www.googleapis.com/books/v1/volumes?q=intitle:{$title}+inauthor:{$authors}&key={$apiKey}&maxResults=10";
+        $url = "https://www.googleapis.com/books/v1/volumes?q=subject:{$genre}&maxResults=1&key={$apiKey}";
 
         // Google Books APIへリクエスト
         $response = Http::get($url);
@@ -61,55 +85,52 @@ class BookSeeder extends Seeder
             $items = $response->json()['items'] ?? [];
 
             if (empty($items)) {
-                Log::info("No books found for title: {$bookData['title']} and authors: {$bookData['authors']}");
+                Log::info("No books found for genre: {$genre}");
                 return;
             }
 
-            // 最大10件の書籍情報をDBに保存
-            foreach ($items as $item) {
-                $book = $item['volumeInfo'];
+            // 取得した書籍情報をDBに保存
+            $book = $items[0]['volumeInfo']; // 1件のみ取得
 
-                // title と authors が完全一致する場合にのみ処理を進める
-                if (
-                    stripos($book['title'], $bookData['title']) !== false &&
-                    stripos($book['authors'][0], $bookData['authors']) !== false
-                ) {
+            // 発行年の取得と変換（年だけの場合は01-01に変換）
+            $year = $book['publishedDate'] ?? 'Unknown';
+            if (preg_match('/^\d{4}$/', $year)) {
+                $year = $year . '-01-01'; // 年だけなら、'YYYY-01-01'の形式にする
+            }
 
-                    // 画像URLの取得
-                    $imageUrl = $book['imageLinks']['thumbnail'] ?? null;
+            // 画像URLの取得
+            $imageUrl = $book['imageLinks']['thumbnail'] ?? null;
 
-                    // 画像URLが存在すれば画像を保存
+            // 画像URLが存在すれば画像を保存
+            $imagePath = null;
+            if ($imageUrl) {
+                // ImageServiceを使って画像を保存
+                $imagePath = $this->imageService->downloadAndStoreImage($imageUrl);
+                if ($imagePath === '画像のダウンロードに失敗しました') {
+                    Log::warning('Failed to download image for book: ' . $book['title']);
                     $imagePath = null;
-                    if ($imageUrl) {
-                        // ImageServiceを使って画像を保存
-                        $imagePath = $this->imageService->downloadAndStoreImage($imageUrl);
-                        if ($imagePath === '画像のダウンロードに失敗しました') {
-                            Log::warning('Failed to download image for book: ' . $book['title']);
-                            $imagePath = null;
-                        }
-                    }
-
-                    // データベースに保存
-                    Book::firstOrCreate(
-                        ['title' => $book['title'], 'authors' => implode(', ', $book['authors'])],  // 重複を避ける
-                        [
-                            'title' => $book['title'],
-                            'authors' => implode(', ', $book['authors']),
-                            'publisher' => $book['publisher'] ?? 'Unknown',
-                            'year' => $book['publishedDate'] ?? 'Unknown',
-                            'genre' => isset($book['categories']) ? implode(', ', $book['categories']) : 'Unknown',
-                            'description' => $book['description'] ?? 'No description available.',
-                            'google_books_url' => $googlebooksurl ?? 'No URL',
-                            'image_path' => $imagePath ?? 'No Image',
-                            'image_url' => $imageUrl ?? 'No Image URL',
-                        ]
-                    );
-
-                    Log::info("Book saved: {$book['title']}");
                 }
             }
+
+            // データベースに保存
+            Book::firstOrCreate(
+                ['title' => $book['title'], 'authors' => implode(', ', $book['authors'])], // 重複を避ける
+                [
+                    'title' => $book['title'],
+                    'authors' => implode(', ', $book['authors']),
+                    'publisher' => $book['publisher'] ?? 'Unknown',
+                    'year' => $book['publishedDate'] ?? 'Unknown',
+                    'genre' => $genreJapanese, // 日本語のジャンルを保存
+                    'description' => $book['description'] ?? 'No description available.',
+                    'google_books_url' => $book['infoLink'] ?? 'No URL',
+                    'image_path' => $imagePath ?? 'No Image',
+                    'image_url' => $imageUrl ?? 'No Image URL',
+                ]
+            );
+
+            Log::info("Book saved for genre: {$genre} - {$book['title']}");
         } else {
-            Log::error('Failed to fetch book data from Google API for ' . $bookData['title']);
+            Log::error('Failed to fetch book data from Google API for genre: ' . $genre);
         }
     }
 }
