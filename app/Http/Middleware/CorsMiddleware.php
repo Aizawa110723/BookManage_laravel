@@ -9,11 +9,12 @@ use Illuminate\Support\Facades\Log;
 
 class CorsMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
+    // /**
+    //  * Handle an incoming request.
+    //  *
+    //  * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+    //  */
+
     public function handle(Request $request, Closure $next): Response
     {
         $allowedOrigins = env('CORS_ALLOWED_ORIGINS', '*');
@@ -23,22 +24,19 @@ class CorsMiddleware
             return response()->json([], 200)
                 ->header('Access-Control-Allow-Origin', $allowedOrigins)
                 ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, X-XSRF-TOKEN, X-Requested-With, Authorization')
-                ->header('Access-Control-Allow-Credentials', 'true');  // クレデンシャルを許可
+                ->header('Access-Control-Allow-Headers', 'Content-Type, X-XSRF-TOKEN, X-Requested-With, Authorization');
         }
 
-        // 次のミドルウェア（またはコントローラ）を実行し、レスポンスを取得
+        // 次のミドルウェア（コントローラ）を実行し、レスポンスを取得
         $response = $next($request);
 
-        // デバッグ用にログを出力して確認
-        Log::info('CORS Headers:', $response->headers->all());
+        // // ログを出力して確認
+        // Log::info('CORS Headers:', $response->headers->all());
 
         // 必要なヘッダーを追加
         $response->headers->set('Access-Control-Allow-Origin', $allowedOrigins);  // オリジンを許可
         $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // 許可するメソッド
         $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, X-XSRF-TOKEN, X-Requested-With, Authorization'); // 許可するヘッダー
-        $response->headers->set('Access-Control-Allow-Credentials', 'true'); // クレデンシャルを許可
-
 
         return $response;
     }

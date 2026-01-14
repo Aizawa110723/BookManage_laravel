@@ -4,91 +4,81 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Book;
-use App\Services\GoogleBooksService;
-use App\Services\ImageService;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Session;  // Sessionファサード
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+
 
 class BookController extends Controller
 {
-    protected $googleBooksService;
-    protected $imageService;  // ImageServiceのインスタンスを保持・注入
 
-    public function __construct(GoogleBooksService $googleBooksService, ImageService $imageService)
-    {
-        // コンストラクタでサービスを注入
-        $this->googleBooksService = $googleBooksService;
-        $this->imageService = $imageService;  // ImageServiceの注入
+// 書籍情報を楽天BooksAPIから取得してDBに保存
+public function fetchFromRakuten(Request $request)
+{
+    $keyword = $request->input('keyword', 'React'); // デフォルトはReact
+    $applicationId = env('RAKUTEN_APP_ID');         // .envに書く
+
+    $url = "https://app.rakuten.co.jp/services/api/BooksBook/Search/2017404";
+    $response = Http::get($url, [
+        'format' => 'json',
+        'applicationId' => $applicationId,
+        'title' => $keyword,
+        'hits' => 10,
+    ]);
+
+$data = $response->json();
+
+$savedBooks =[];  // 初期化
+
+foreach ($data['Items'] as $Item) {
+    $bookData = $Item['Item'];
+
+    // 画像をstorageに保存
+    $imagePath = null;
+    if(!empty($bookData['mediumImageUrl'])) {
+        try {
+            $contents = file_get_contents($bookData['mediumImageUrl']);
+            $name = basename($bookData['mediumImageUrl']);
+            $imagePath = 'books/' . $name;
+            Storage::disk('public')->put($imagePath, $contents);
+        } catch (\Exception $e) {
+            Log::warning("画像保存失敗:" . $bookData['title']);
+        }
     }
 
-    // // CSRFトークンを返すアクションを追加
-    // public function getCsrfToken()
-    // {
-    //     return response()->json(['csrf_token' => csrf_token()]);
-    // }
-
-    public function store(Request $request)
-    {
-        // バリデーション: リクエストからタイトルと著者を取得
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'authors' => 'required|string|max:255',
-        ]);
-
-        $title = $validated['title'];
-        $authors = $validated['authors'];
-
-        // Google Books API から書籍情報を取得
-        $bookData = $this->googleBooksService->fetchBooks([
-            'title' => $title,
-            'authors' => $authors
-        ]);
-
-        // 書籍データが見つからなかった場合
-        if (!$bookData) {
-            return response()->json(['error' => '書籍情報が見つかりませんでした。'], 404);
-        }
-
-        // // `volumeInfo`から情報を取得
-        // $volumeInfo = $bookData['items'][0]['volumeInfo'];
-
-        // 画像URLがあれば画像をダウンロードして保存
-        $imageUrl = $bookData['imageLinks']['thumbnail'] ?? null; // fetchBooksが返す画像URLを取得
-        $imagePath = null;
-
-        if ($imageUrl) {
-            // ImageServiceを使って画像をダウンロードし、保存
-            $imagePath = $this->imageService->downloadAndStoreImage($imageUrl);
-        } else {
-            // 画像がない場合の処理
-            Log::warning('No image found for book: ' . $bookData['title']);
-        }
-
-        // 書籍情報をDBに保存
-        $book = Book::create([
+    $book = Book::updateOrCreate(
+        ['isbn' => $bookData['isbn']],
+        [
             'title' => $bookData['title'],
-            'authors' => implode(', ', $bookData['authors']),
-            'publisher' => $bookData['publisher'] ?? 'Unknown',
-            'year' => $bookData['publishedDate'] ?? 'Unknown',
-            'genre' => isset($bookData['categories']) ? implode(', ', $bookData['categories']) : 'Unknown',
-            'description' => $bookData['description'] ?? 'No description available.',
-            'google_books_url' => $googlebooksurl['infoLink'] ?? 'No URL',
-            'image_path' => $imagePath ?? 'No Image',
-            'image_url' => $imageUrl ?? 'No Image URL',
-        ]);
+            'authors' => $bookData['author'] ?? null,
+            'publisher' => $bookData['publisherName'] ?? null,
+            'year' => $bookData['salesDate'] ?? null,
+            'genre' => $bookData['largeGenreName'] ?? null,
+            'image_path' => $imagePath,  // storage パス
+            'image_url' => $bookData['mediumImageUrl'] ?? null, // 元URL
+        ]
+    );
 
-        // レスポンスを返す
-        return response()->json(['message' => '書籍が追加されました！', 'book' => $book], 201);
-    }
+    $savedBooks[] = $book;
+}
 
+return response()->json([
+    'message' => '楽天BooksAPIから書籍情報を取得・保存しました',
+    'books' => $savedBooks
+]);
+
+}
+
+
+    // DBから書籍一覧取得（ページネーション）
     public function index()
     {
-        // すべての書籍を取得してページネーション
         $books = Book::paginate(10);
         return response()->json($books);
     }
 
+
+    // 書籍検索
     public function search(Request $request)
     {
         // タイトルと著者をクエリパラメータから取得

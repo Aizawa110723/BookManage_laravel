@@ -1,4 +1,5 @@
-<?php
+
+
 
 namespace Database\Seeders;
 
@@ -133,4 +134,4 @@ class BookSeeder extends Seeder
             Log::error('Failed to fetch book data from Google API for genre: ' . $genre);
         }
     }
-}
+} 
