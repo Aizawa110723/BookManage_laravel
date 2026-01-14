@@ -12,62 +12,70 @@ use Illuminate\Support\Facades\Storage;
 class BookController extends Controller
 {
 
-// 書籍情報を楽天BooksAPIから取得してDBに保存
-public function fetchFromRakuten(Request $request)
-{
-    $keyword = $request->input('keyword', 'React'); // デフォルトはReact
-    $applicationId = env('RAKUTEN_APP_ID');         // .envに書く
+    // 書籍情報を楽天BooksAPIから取得してDBに保存
+    public function fetchFromRakuten(Request $request)
+    {
+        $keyword = $request->input('keyword', 'React'); // デフォルトはReact
+        $applicationId = env('RAKUTEN_APP_ID');         // .envに書く
 
-    $url = "https://app.rakuten.co.jp/services/api/BooksBook/Search/2017404";
-    $response = Http::get($url, [
-        'format' => 'json',
-        'applicationId' => $applicationId,
-        'title' => $keyword,
-        'hits' => 10,
-    ]);
+        $url = "https://app.rakuten.co.jp/services/api/BooksBook/Search/20170404";
+        $response = Http::get($url, [
+            'format' => 'json',
+            'applicationId' => $applicationId,
+            'title' => $keyword,
+            'hits' => 10,
 
-$data = $response->json();
+        ]);
 
-$savedBooks =[];  // 初期化
+        $data = $response->json();
 
-foreach ($data['Items'] as $Item) {
-    $bookData = $Item['Item'];
-
-    // 画像をstorageに保存
-    $imagePath = null;
-    if(!empty($bookData['mediumImageUrl'])) {
-        try {
-            $contents = file_get_contents($bookData['mediumImageUrl']);
-            $name = basename($bookData['mediumImageUrl']);
-            $imagePath = 'books/' . $name;
-            Storage::disk('public')->put($imagePath, $contents);
-        } catch (\Exception $e) {
-            Log::warning("画像保存失敗:" . $bookData['title']);
+        // Items が存在するか確認
+        if (!isset($data['Items']) || !is_array($data['Items'])) {
+            return response()->json([
+                'message' => '楽天APIのレスポンスにItemsが存在しません',
+                'data' => $data
+            ], 500);
         }
+
+        $savedBooks = [];  // 初期化
+
+        foreach ($data['Items'] as $item) {
+            $bookData = $item['Item'];
+
+            // 画像をstorageに保存
+            $imagePath = null;
+            if (!empty($bookData['mediumImageUrl'])) {
+                try {
+                    $contents = file_get_contents($bookData['mediumImageUrl']);
+                    $name = basename($bookData['mediumImageUrl']);
+                    $imagePath = 'books/' . $name;
+                    Storage::disk('public')->put($imagePath, $contents);
+                } catch (\Exception $e) {
+                    Log::warning("画像保存失敗:" . $bookData['title']);
+                }
+            }
+
+            $book = Book::updateOrCreate(
+                ['isbn' => $bookData['isbn']],
+                [
+                    'title' => $bookData['title'],
+                    'authors' => $bookData['author'] ?? null,
+                    'publisher' => $bookData['publisherName'] ?? null,
+                    'year' => $bookData['salesDate'] ?? null,
+                    'genre' => $bookData['largeGenreName'] ?? null,
+                    'image_path' => $imagePath,  // storage パス
+                    'image_url' => $bookData['mediumImageUrl'] ?? null, // 元URL
+                ]
+            );
+
+            $savedBooks[] = $book;
+        }
+
+        return response()->json([
+            'message' => '楽天BooksAPIから書籍情報を取得・保存しました',
+            'books' => $savedBooks
+        ]);
     }
-
-    $book = Book::updateOrCreate(
-        ['isbn' => $bookData['isbn']],
-        [
-            'title' => $bookData['title'],
-            'authors' => $bookData['author'] ?? null,
-            'publisher' => $bookData['publisherName'] ?? null,
-            'year' => $bookData['salesDate'] ?? null,
-            'genre' => $bookData['largeGenreName'] ?? null,
-            'image_path' => $imagePath,  // storage パス
-            'image_url' => $bookData['mediumImageUrl'] ?? null, // 元URL
-        ]
-    );
-
-    $savedBooks[] = $book;
-}
-
-return response()->json([
-    'message' => '楽天BooksAPIから書籍情報を取得・保存しました',
-    'books' => $savedBooks
-]);
-
-}
 
 
     // DBから書籍一覧取得（ページネーション）

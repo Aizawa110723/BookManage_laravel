@@ -9,12 +9,6 @@ use Illuminate\Support\Facades\Log;
 
 class CorsMiddleware
 {
-    // /**
-    //  * Handle an incoming request.
-    //  *
-    //  * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-    //  */
-
     public function handle(Request $request, Closure $next): Response
     {
         $allowedOrigins = env('CORS_ALLOWED_ORIGINS', '*');
@@ -36,7 +30,7 @@ class CorsMiddleware
         // 必要なヘッダーを追加
         $response->headers->set('Access-Control-Allow-Origin', $allowedOrigins);  // オリジンを許可
         $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // 許可するメソッド
-        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, X-XSRF-TOKEN, X-Requested-With, Authorization'); // 許可するヘッダー
+        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, Authorization'); // 許可するヘッダー
 
         return $response;
     }
