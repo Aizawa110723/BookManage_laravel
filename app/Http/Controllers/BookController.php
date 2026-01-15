@@ -77,6 +77,34 @@ class BookController extends Controller
         ]);
     }
 
+    // DBに書籍を保存（Reactのフォーム用）
+    public function store(Request $request)
+    {
+        // バリデーション
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'authors' => 'required|string|max:255',
+            'publisher' => 'required|string|max:255',
+            'year' => 'required|integer',
+            'genre' => 'required|string|max:255',
+        ]);
+
+        // 保存
+        $book = Book::create([
+            'title' => $validated['title'],
+            'authors' => $validated['authors'],
+            'publisher' => $validated['publisher'],
+            'year' => $validated['year'],
+            'genre' => $validated['genre'],
+            // 画像はまだないので null
+            'image_path' => null,
+            'image_url' => null,
+            'isbn' => null, // ISBNは手入力用では未対応
+        ]);
+
+        return response()->json($book, 201);
+    }
+
 
     // DBから書籍一覧取得（ページネーション）
     public function index()
