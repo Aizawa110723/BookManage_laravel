@@ -117,22 +117,30 @@ class BookController extends Controller
     // 書籍検索
     public function search(Request $request)
     {
-        // タイトルと著者をクエリパラメータから取得
-        $title = $request->input('title');
-        $authors = $request->input('authors');
-
-        // 書籍情報の検索
         $query = Book::query();
 
-        if ($title) {
-            $query->where('title', 'like', '%' . $title . '%');
+        if ($request->filled('title')) {
+            $query->where('title', 'like', '%' . $request->title . '%');
         }
 
-        if ($authors) {
-            $query->where('authors', 'like', '%' . $authors . '%');
+        if ($request->filled('authors')) {
+            $query->where('authors', 'like', '%' . $request->authors . '%');
         }
 
-        // 検索結果を返す
+        // ↓ ここから追加
+        if ($request->filled('publisher')) {
+            $query->where('publisher', 'like', '%' . $request->publisher . '%');
+        }
+
+        if ($request->filled('year')) {
+            $query->where('year', $request->year);
+        }
+
+        if ($request->filled('genre')) {
+            $query->where('genre', 'like', '%' . $request->genre . '%');
+        }
+        // ↑ ここまで
+
         return response()->json($query->get());
     }
 }
