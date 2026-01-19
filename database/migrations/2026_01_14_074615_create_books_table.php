@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('books', function (Blueprint $table) {
             $table->id();                             // 自動増分ID
-            $table->string('isbn', 20)->unique();     // ISBN（ユニーク制約）
+            $table->string('isbn', 20)->nullable()->unique(); // ISBN（ユニーク制約）
             $table->string('title');                  // 書名
             $table->string('authors')->nullable();    // 著者
             $table->string('publisher')->nullable();  // 出版社
