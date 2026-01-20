@@ -49,7 +49,10 @@ class BookController extends Controller
             $book = $item['Item'];
 
             return [
-                'isbn' => $book['isbn'] ?? null,
+                'isbn' => $book['isbn']
+                    ?? $book['isbn13']
+                    ?? $book['isbn10']
+                    ?? null,
                 'title' => $book['title'] ?? '',
                 'authors' => $book['author'] ?? '',
                 'publisher' => $book['publisherName'] ?? '',
@@ -77,18 +80,32 @@ class BookController extends Controller
             'imageUrl' => 'nullable|string',
         ]);
 
-        $book = Book::updateOrCreate(
-            ['isbn' => $validated['isbn']],
-            [
-                'title' => $validated['title'],
-                'authors' => $validated['authors'],
-                'publisher' => $validated['publisher'],
-                'year' => $validated['year'],
-                'genre' => $validated['genre'],
-                'image_url' => $validated['imageUrl'],
-                'image_path' => null,
-            ]
-        );
+        $data = [
+            'title' => $validated['title'],
+            'authors' => $validated['authors'],
+            'publisher' => $validated['publisher'],
+            'year' => $validated['year'] ?? null,
+            'genre' => $validated['genre'] ?? null,
+            'isbn' => $validated['isbn'] ?? null,  //ibsnユニーク判定
+            'image_url' => $validated['imageUrl'] ?? null,
+            'image_path' => null,
+        ];
+
+        //ibsnユニーク判定
+        if (!empty($validated['isbn'])) {
+            // ISBNがある場合はISBNで判定
+            $book = Book::updateOrCreate(['isbn' => $validated['isbn']], $data);
+        } else {
+            // ISBNがない場合は title+authors+publisher の組み合わせで判定
+            $book = Book::updateOrCreate(
+                [
+                    'title' => $validated['title'],
+                    'authors' => $validated['authors'],
+                    'publisher' => $validated['publisher'],
+                ],
+                $data
+            );
+        }
 
         return response()->json($book, 201);
     }
@@ -98,7 +115,21 @@ class BookController extends Controller
      */
     public function index()
     {
-        return response()->json(Book::paginate(10));
+        $books = Book::select('*')
+            ->selectRaw("
+            (CASE WHEN title IS NOT NULL AND title != '' THEN 1 ELSE 0 END +
+             CASE WHEN authors IS NOT NULL AND authors != '' THEN 1 ELSE 0 END +
+             CASE WHEN publisher IS NOT NULL AND publisher != '' THEN 1 ELSE 0 END +
+             CASE WHEN year IS NOT NULL AND year != '' THEN 1 ELSE 0 END +
+             CASE WHEN genre IS NOT NULL AND genre != '' THEN 1 ELSE 0 END +
+             CASE WHEN image_url IS NOT NULL AND image_url != '' THEN 1 ELSE 0 END
+            ) as completeness
+        ")
+            ->orderByDesc('completeness') // 完整度が高い順に並べる
+            ->limit(10)  // 最大10件
+            ->get();  // 実際にDBから取得
+
+        return response()->json($books);
     }
 
     /**
