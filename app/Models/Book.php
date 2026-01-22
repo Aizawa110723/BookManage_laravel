@@ -15,18 +15,13 @@ class Book extends Model
     // 複数代入可能な属性
     protected $fillable = [
         'title',
-        'author',
+        'authors',
         'publisher',
-        'published_date',
-        'categories',
-        'description',
-        'infoLink',
+        'year',
+        'genre',
+        'isbn',
         'image_path',
         'image_url',
     ];
 
-    // 日付の形式変換
-    protected $casts = [
-        'published_date' => 'date',
-    ];
 }

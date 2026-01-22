@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Book;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class BookController extends Controller
 {
@@ -13,6 +14,10 @@ class BookController extends Controller
      */
     public function fetchFromRakuten(Request $request)
     {
+
+        Log::debug('request all', $request->all());
+
+
         $applicationId = config('services.rakuten.app_id');
 
         $params = [
@@ -70,6 +75,10 @@ class BookController extends Controller
      */
     public function store(Request $request)
     {
+
+        // // フロントから送られてきた内容を丸ごと確認
+        // dd($request->all(), $request->json()->all());
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'authors' => 'nullable|string|max:255',
@@ -80,16 +89,19 @@ class BookController extends Controller
             'imageUrl' => 'nullable|string',
         ]);
 
+
         $data = [
-            'title' => $validated['title'],
-            'authors' => $validated['authors'],
-            'publisher' => $validated['publisher'],
-            'year' => $validated['year'] ?? null,
-            'genre' => $validated['genre'] ?? null,
-            'isbn' => $validated['isbn'] ?? null,  //ibsnユニーク判定
-            'image_url' => $validated['imageUrl'] ?? null,
+            'title' => $validated['title'] ?: null,
+            'authors' => $validated['authors'] ?: null,
+            'publisher' => $validated['publisher'] ?: null,
+            'year' => $validated['year'] ?: null,
+            'genre' => $validated['genre'] ?: null,
+            'isbn' => $validated['isbn'] ?: null,
+            'image_url' => $validated['imageUrl'] ?: null,
             'image_path' => null,
         ];
+
+        // dd($validated);
 
         //ibsnユニーク判定
         if (!empty($validated['isbn'])) {
