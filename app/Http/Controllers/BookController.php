@@ -83,11 +83,27 @@ class BookController extends Controller
             'title' => 'required|string|max:255',
             'authors' => 'nullable|string|max:255',
             'publisher' => 'nullable|string|max:255',
-            'year' => 'nullable|string|max:20',
+            'year' => [
+                'nullable',
+                'string',
+                'max:20',
+                function ($attribute, $value, $fail) {
+                    // 許容する形式：YYYY, YYYY年MM月, YYYY年MM月DD日, YYYY年MM月DD日頃
+                    if (
+                        !preg_match('/^\d{4}年(\d{1,2}月)?(\d{1,2}日)?(頃)?$/', $value) &&
+                        !preg_match('/^\d{4}$/', $value)
+                    ) {
+                        $fail($attribute . ' の形式が正しくありません');
+                    }
+                }
+            ],
             'genre' => 'nullable|string|max:255',
             'isbn' => 'nullable|string|max:20',
             'imageUrl' => 'nullable|string',
         ]);
+
+        // デフォルト画像
+        $defaultImage = '/images/noprinting.png';
 
 
         $data = [
@@ -97,7 +113,7 @@ class BookController extends Controller
             'year' => $validated['year'] ?: null,
             'genre' => $validated['genre'] ?: null,
             'isbn' => $validated['isbn'] ?: null,
-            'image_url' => $validated['imageUrl'] ?: null,
+            'image_url' => $validated['imageUrl'] ?: $defaultImage,   // ← 空ならデフォルト画像
             'image_path' => null,
         ];
 
@@ -149,6 +165,17 @@ class BookController extends Controller
      */
     public function search(Request $request)
     {
+
+        if (
+            !$request->filled('title') &&
+            !$request->filled('authors') &&
+            !$request->filled('publisher') &&
+            !$request->filled('year') &&
+            !$request->filled('genre')
+        ) {
+            return response()->json([], 200);
+        }
+
         $query = Book::query();
 
         if ($request->filled('title')) {
