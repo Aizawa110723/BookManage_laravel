@@ -15,7 +15,12 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'], // CORSクッキーを適用するパス
+    'paths' => [
+        'api/*',
+        'images/*',        
+        'storage/*',       // ← 今後のため
+        'sanctum/csrf-cookie',
+    ],    // CORSクッキーを適用するパス
     'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     'allowed_origins' => ['http://localhost:5173', 'http://127.0.0.1:5173'],
     'allowed_origins_patterns' => [], //正規表現によるオリジン指定。preg_matchの引数としてそのまま渡される
