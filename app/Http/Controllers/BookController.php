@@ -141,8 +141,10 @@ class BookController extends Controller
     /**
      * 一覧取得
      */
-    public function index()
+    public function index(Request $request)
     {
+        $perPage = $request->query('perPage', 10); // デフォルトは10
+
         $books = Book::select('*')
             ->selectRaw("
             (CASE WHEN title IS NOT NULL AND title != '' THEN 1 ELSE 0 END +
@@ -154,8 +156,7 @@ class BookController extends Controller
             ) as completeness
         ")
             ->orderByDesc('completeness') // 完整度が高い順に並べる
-            ->limit(10)  // 最大10件
-            ->get();  // 実際にDBから取得
+            ->paginate($perPage);
 
         return response()->json($books);
     }
